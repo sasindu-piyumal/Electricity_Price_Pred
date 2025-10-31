@@ -1,7 +1,39 @@
 #!/usr/bin/env python3
 """
-Micro-benchmark script to compare performance of original vs optimized electricity data processing.
-This script measures the performance improvements made to address bottlenecks.
+Electricity Data Processing - Performance Benchmark Script
+
+PURPOSE:
+--------
+This benchmark script measures and compares the performance of optimizations applied to the
+electricity data processing pipeline. It provides concrete metrics on time savings and 
+memory improvements for each optimization.
+
+WHAT IT BENCHMARKS:
+-------------------
+1. Data loading and initial setup
+2. Data type conversion (loop vs vectorized)
+3. Periodic transformation function
+4. Missing values filling (loop vs vectorized)
+5. Visualization bottleneck (simulation)
+
+USAGE:
+------
+    python benchmark_electricity.py
+
+REQUIREMENTS:
+-------------
+- electricity.csv must be in the same directory
+- pandas, numpy, and optionally psutil (for memory tracking)
+
+OUTPUT:
+-------
+Detailed performance metrics for each optimization including:
+- Execution time comparisons
+- Memory usage statistics
+- Speed improvement ratios
+- Overall performance summary
+
+For more details on the optimizations, see OPTIMIZATION_SUMMARY.md
 """
 
 import pandas as pd
