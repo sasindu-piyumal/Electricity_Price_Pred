@@ -125,7 +125,7 @@ df_cleaned.shape
 # In[14]:
 
 
-SMPEP2_out = (df_cleaned['SMPEP2'] > 0) | (df_cleaned['SMPEP2'] <= 550)
+SMPEP2_out = (df_cleaned['SMPEP2'] > 0) & (df_cleaned['SMPEP2'] <= 550)
 
 
 # In[15]:
