@@ -14,7 +14,16 @@ import pandas as pd
 import numpy as np
 
 import warnings
-warnings.filterwarnings('ignore')
+# Targeted warning filters for known safe warnings
+# See WARNINGS.md for detailed justification
+
+# Suppress sklearn FutureWarnings about API changes (informational only, not affecting functionality)
+warnings.filterwarnings('ignore', category=FutureWarning, module='sklearn')
+
+# Suppress sklearn ConvergenceWarnings for models (Lasso, SVR) during model comparison
+# These are expected in exploratory analysis with default hyperparameters
+from sklearn.exceptions import ConvergenceWarning
+warnings.filterwarnings('ignore', category=ConvergenceWarning)
 
 
 # ## Importing Data set
@@ -103,7 +112,8 @@ for col in numeric_vals:
 # In[11]:
 
 
-df.replace(['', 'NA', 'N/A', None], np.nan, inplace=True)
+# Fix: Avoid inplace operation to prevent FutureWarning
+df = df.replace(['', 'NA', 'N/A', None], np.nan)
 
 
 # In[12]:
@@ -143,10 +153,11 @@ df_cleaned.shape
 # In[17]:
 
 
+# Fix: Avoid inplace operation to prevent FutureWarning
 fill_with_median = ['ForecastWindProduction','SystemLoadEA','SMPEA','ActualWindProduction', 'SystemLoadEP2', 'SMPEP2']
 for col in fill_with_median:
     median_col = df_cleaned[col].median()
-    df_cleaned[col].fillna(median_col,inplace=True)
+    df_cleaned[col] = df_cleaned[col].fillna(median_col)
 
 
 # ##### Because of having skewed distribution on 'ForecastWindProduction','SystemLoadEA','SMPEA','ActualWindProduction', 'SystemLoadEP2', 'SMPEP2' columns. Missing values were filled with median.
@@ -154,8 +165,9 @@ for col in fill_with_median:
 # In[18]:
 
 
+# Fix: Avoid inplace operation to prevent FutureWarning
 mean_CO2Intensity = df_cleaned['CO2Intensity'].mean()
-df_cleaned['CO2Intensity'].fillna(mean_CO2Intensity,inplace=True)
+df_cleaned['CO2Intensity'] = df_cleaned['CO2Intensity'].fillna(mean_CO2Intensity)
 
 
 # ##### CO2Intensity has normal dustribution. So null values were filled with mean value of the CO2Intensity.
