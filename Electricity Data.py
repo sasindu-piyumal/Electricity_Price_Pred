@@ -275,10 +275,32 @@ plt.show()
 # In[ ]:
 
 
-def periodic_transform(df,variable):
-    df_scaled[f"{variable}_SIN"] = np.sin(df_scaled[variable] / df_scaled[variable].max()*2*np.pi)
-    df_scaled[f"{variable}_COS"] = np.cos(df_scaled[variable] / df_scaled[variable].max()*2*np.pi)
-    return df_scaled
+def periodic_transform(df, variable):
+    """
+    Transform a cyclic variable into sine and cosine components to preserve periodicity.
+    
+    Parameters:
+    -----------
+    df : pandas.DataFrame
+        The dataframe to add the transformed columns to
+    variable : str
+        The name of the column to transform
+        
+    Returns:
+    --------
+    pandas.DataFrame
+        The dataframe with added sine and cosine transformation columns
+    """
+    # Calculate the maximum value for normalization
+    max_value = df[variable].max()
+    
+    # Add sine transformation
+    df[f"{variable}_SIN"] = np.sin(df[variable] / max_value * 2 * np.pi)
+    
+    # Add cosine transformation
+    df[f"{variable}_COS"] = np.cos(df[variable] / max_value * 2 * np.pi)
+    
+    return df
 
 
 # In[ ]:
@@ -360,9 +382,19 @@ x_test_scaled = mm.transform(x_test)
 
 
 def model_acc(model):
-    model.fit(x_train_scaled,y_train)
-    acc = model.score(x_test_scaled,y_test)
-    print(str(model)+'-->'+str(acc))
+    """
+    Train and evaluate a model using scaled training and test data.
+    
+    Args:
+        model: A scikit-learn compatible model with fit() and score() methods
+        
+    Returns:
+        float: The accuracy score on the test set
+    """
+    model.fit(x_train_scaled, y_train)
+    acc = model.score(x_test_scaled, y_test)
+    print(f'{model.__class__.__name__} --> {acc:.4f}')
+    return acc
 
 
 # In[ ]:
@@ -477,9 +509,19 @@ x_test_pca = pca.transform(x_test_scaled)
 
 
 def model_acc_pca(model):
-    model.fit(x_train_pca,y_train)
-    acc = model.score(x_test_pca,y_test)
-    print(str(model)+'-->'+str(acc))
+    """Train and evaluate a model using PCA-transformed features.
+    
+    Args:
+        model: A scikit-learn compatible model instance to train and evaluate.
+    
+    Returns:
+        float: The accuracy score of the model on the test set.
+    """
+    model.fit(x_train_pca, y_train)
+    acc = model.score(x_test_pca, y_test)
+    model_name = model.__class__.__name__
+    print(f'{model_name} --> {acc:.4f}')
+    return acc
 
 
 # In[ ]:
@@ -578,7 +620,7 @@ X_train,X_test,Y_train,Y_test = train_test_split(X,Y,test_size=0.2,random_state=
 def model_acc_no_scale(model):
     model.fit(X_train,Y_train)
     acc = model.score(X_test,Y_test)
-    print(str(model)+'-->'+str(acc))
+    print(f'{model}-->{acc}')
 
 
 # In[ ]:
