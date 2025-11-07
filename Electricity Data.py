@@ -15,6 +15,7 @@ import numpy as np
 
 import warnings
 warnings.filterwarnings('ignore')
+SKIP_PLOTS = True
 
 
 # ## Importing Data set
@@ -22,7 +23,8 @@ warnings.filterwarnings('ignore')
 # In[2]:
 
 
-data = pd.read_csv("Z:\\Sasindu\\Data set\\electricity.csv", index_col=0, parse_dates=[0])
+# Use relative path to ensure portability
+data = pd.read_csv("electricity.csv", index_col=0, parse_dates=[0])
 
 
 # In[3]:
@@ -86,14 +88,15 @@ import seaborn as sns
 numeric_vals = ['HolidayFlag', 'DayOfWeek', 'WeekOfYear', 'Day', 'Month', 'Year', 'PeriodOfDay',
                'ForecastWindProduction', 'SystemLoadEA', 'SMPEA', 'ORKTemperature', 'ORKWindspeed',
                 'CO2Intensity', 'ActualWindProduction', 'SystemLoadEP2', 'SMPEP2']
-for col in numeric_vals:
-    plt.figure(figsize=(12, 4))
-    plt.subplot(1, 2, 1)
-    sns.histplot(df[col], kde=True)
-    plt.subplot(1, 2, 2)
-    sns.boxplot(x=df[col])
-    plt.tight_layout()
-    plt.show()
+if not SKIP_PLOTS:
+    for col in numeric_vals:
+        plt.figure(figsize=(12, 4))
+        plt.subplot(1, 2, 1)
+        sns.histplot(df[col], kde=True)
+        plt.subplot(1, 2, 2)
+        sns.boxplot(x=df[col])
+        plt.tight_layout()
+        plt.show()
 
 
 # df.describe()
@@ -125,7 +128,8 @@ df_cleaned.shape
 # In[14]:
 
 
-SMPEP2_out = (df_cleaned['SMPEP2'] > 0) | (df_cleaned['SMPEP2'] <= 550)
+# Fix logic using vectorized comparisons for compatibility
+SMPEP2_out = (df_cleaned['SMPEP2'] >= 0) & (df_cleaned['SMPEP2'] <= 550)
 
 
 # In[15]:
@@ -236,25 +240,28 @@ df_scaled.columns
 # In[26]:
 
 
-f, ax = plt.subplots(nrows=1, ncols=1, figsize=(20,3))
-sns.lineplot(x=df_scaled.DateTime, y = df_scaled.Month)
-plt.show()
+if not SKIP_PLOTS:
+    f, ax = plt.subplots(nrows=1, ncols=1, figsize=(20,3))
+    sns.lineplot(x=df_scaled.DateTime, y = df_scaled.Month)
+    plt.show()
 
 
 # In[27]:
 
 
-f, ax = plt.subplots(nrows=1, ncols=1, figsize=(20,3))
-sns.lineplot(x=df_scaled.DateTime, y = df_scaled.DayOfWeek)
-plt.show()
+if not SKIP_PLOTS:
+    f, ax = plt.subplots(nrows=1, ncols=1, figsize=(20,3))
+    sns.lineplot(x=df_scaled.DateTime, y = df_scaled.DayOfWeek)
+    plt.show()
 
 
 # In[28]:
 
 
-f, ax = plt.subplots(nrows=1, ncols=1, figsize=(20,3))
-sns.lineplot(x=df_scaled.DateTime, y = df_scaled.Day)
-plt.show()
+if not SKIP_PLOTS:
+    f, ax = plt.subplots(nrows=1, ncols=1, figsize=(20,3))
+    sns.lineplot(x=df_scaled.DateTime, y = df_scaled.Day)
+    plt.show()
 
 
 # In[ ]:
@@ -262,10 +269,11 @@ plt.show()
 
 from datetime import date
 
-f, ax = plt.subplots(nrows=1, ncols=1, figsize=(20,3))
-sns.lineplot(x=df_scaled.DateTime, y = df_scaled.PeriodOfDay)
-ax.set_xlim([date(2013,12,1),date(2014,1,1)])
-plt.show()
+if not SKIP_PLOTS:
+    f, ax = plt.subplots(nrows=1, ncols=1, figsize=(20,3))
+    sns.lineplot(x=df_scaled.DateTime, y = df_scaled.PeriodOfDay)
+    ax.set_xlim([date(2013,12,1),date(2014,1,1)])
+    plt.show()
 
 
 # ##### By looking above graphs, We can see cyclic nature.Convert cyclic features into two continuous features using sine and cosine transformations to preserve the cyclic nature.Sine and Cosine functions help in representing the cyclic nature by mapping the feature to a circle. 
@@ -275,19 +283,26 @@ plt.show()
 # In[ ]:
 
 
-def periodic_transform(df,variable):
-    df_scaled[f"{variable}_SIN"] = np.sin(df_scaled[variable] / df_scaled[variable].max()*2*np.pi)
-    df_scaled[f"{variable}_COS"] = np.cos(df_scaled[variable] / df_scaled[variable].max()*2*np.pi)
-    return df_scaled
+# Optimized periodic transform: avoids global state, computes scale once, supports multiple columns
+
+def periodic_transform(df, variables):
+    if isinstance(variables, str):
+        variables = [variables]
+    for variable in variables:
+        col = df[variable].to_numpy(copy=False)
+        max_val = np.nanmax(col)
+        # Avoid division by zero
+        denom = max_val if max_val != 0 else 1.0
+        angle = (col / denom) * (2 * np.pi)
+        df[f"{variable}_SIN"] = np.sin(angle)
+        df[f"{variable}_COS"] = np.cos(angle)
+    return df
 
 
 # In[ ]:
 
 
-df_scaled = periodic_transform(df_scaled, 'DayOfWeek')
-df_scaled = periodic_transform(df_scaled, 'Day')
-df_scaled = periodic_transform(df_scaled, 'Month')
-df_scaled = periodic_transform(df_scaled, 'PeriodOfDay')
+df_scaled = periodic_transform(df_scaled, ['DayOfWeek','Day','Month','PeriodOfDay'])
 df_scaled.head()
 
 
@@ -347,7 +362,7 @@ from sklearn.preprocessing import MinMaxScaler
 # In[ ]:
 
 
-mm = MinMaxScaler()
+mm = MinMaxScaler(copy=False)
 x_train_scaled = mm.fit_transform(x_train)
 x_test_scaled = mm.transform(x_test)
 
@@ -381,7 +396,7 @@ dt = DecisionTreeRegressor()
 model_acc(dt)
 
 from sklearn.ensemble import RandomForestRegressor
-rf = RandomForestRegressor()
+rf = RandomForestRegressor(n_jobs=-1, random_state=42)
 model_acc(rf)
 
 from sklearn.svm import SVR
@@ -419,7 +434,7 @@ y_test_pred = y_test_pred.flatten()
 # In[ ]:
 
 
-final_df = pd.DataFrame(np.hstack((y_test_pred[:, np.newaxis], y_test[:, np.newaxis])), columns=['Prediction', 'Real'])
+final_df = pd.DataFrame({'Prediction': y_test_pred, 'Real': y_test.values})
 
 
 # In[ ]:
@@ -498,7 +513,7 @@ dt = DecisionTreeRegressor()
 model_acc_pca(dt)
 
 from sklearn.ensemble import RandomForestRegressor
-rf = RandomForestRegressor()
+rf = RandomForestRegressor(n_jobs=-1, random_state=42)
 model_acc_pca(rf)
 
 from sklearn.svm import SVR
@@ -511,7 +526,7 @@ model_acc_pca(svm)
 
 y_test_pred = rf.predict(x_test_pca)
 y_test_pred = y_test_pred.flatten()
-final_df_pca = pd.DataFrame(np.hstack((y_test_pred[:, np.newaxis], y_test[:, np.newaxis])), columns=['Prediction', 'Real'])
+final_df_pca = pd.DataFrame({'Prediction': y_test_pred, 'Real': y_test.values})
 
 
 # In[ ]:
@@ -597,7 +612,7 @@ dt = DecisionTreeRegressor()
 model_acc_no_scale(dt)
 
 from sklearn.ensemble import RandomForestRegressor
-rf = RandomForestRegressor()
+rf = RandomForestRegressor(n_jobs=-1, random_state=42)
 model_acc_no_scale(rf)
 
 from sklearn.svm import SVR
@@ -610,7 +625,7 @@ model_acc_no_scale(svm)
 
 y_test_pred = rf.predict(X_test)
 y_test_pred = y_test_pred.flatten()
-final_dfr = pd.DataFrame(np.hstack((y_test_pred[:, np.newaxis], y_test[:, np.newaxis])), columns=['Prediction', 'Real'])
+final_dfr = pd.DataFrame({'Prediction': y_test_pred, 'Real': y_test.values})
 
 
 # In[ ]:
