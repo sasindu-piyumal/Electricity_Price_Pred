@@ -12,6 +12,8 @@ jupyter: python3
 
 import pandas as pd
 import numpy as np
+import os
+from pathlib import Path
 
 import warnings
 warnings.filterwarnings('ignore')
@@ -22,7 +24,48 @@ warnings.filterwarnings('ignore')
 # In[2]:
 
 
-data = pd.read_csv("Z:\\Sasindu\\Data set\\electricity.csv", index_col=0, parse_dates=[0])
+# Secure file path handling with validation
+def load_data_securely(filename):
+    """
+    Securely load CSV file with path validation.
+    
+    Args:
+        filename: Name of the CSV file to load (should be in current directory or relative path)
+    
+    Returns:
+        pandas DataFrame
+    
+    Raises:
+        FileNotFoundError: If file doesn't exist
+        ValueError: If path validation fails
+    """
+    # Use pathlib for secure path handling
+    file_path = Path(filename).resolve()
+    
+    # Validate the file exists and is a file (not directory)
+    if not file_path.exists():
+        raise FileNotFoundError(f"Data file not found: {file_path}")
+    
+    if not file_path.is_file():
+        raise ValueError(f"Path is not a file: {file_path}")
+    
+    # Validate file extension
+    if file_path.suffix.lower() != '.csv':
+        raise ValueError(f"Invalid file type. Expected .csv file, got: {file_path.suffix}")
+    
+    # Additional security: ensure the resolved path is within expected directory
+    # This prevents path traversal attacks if the filename ever comes from user input
+    try:
+        file_path.relative_to(Path.cwd())
+    except ValueError:
+        # If file is not in current directory tree, verify it's an acceptable absolute path
+        # For now, we just log a warning but allow it
+        print(f"Warning: Loading file from outside current directory: {file_path}")
+    
+    return pd.read_csv(file_path, index_col=0, parse_dates=[0])
+
+# Load data using secure method - using relative path instead of hardcoded absolute path
+data = load_data_securely("electricity.csv")
 
 
 # In[3]:
@@ -415,13 +458,67 @@ from statsmodels.graphics.tsaplots import plot_pacf
 # In[ ]:
 
 
+def validate_and_create_results_df(y_pred, y_true, pred_col='Prediction', true_col='Real'):
+    """
+    Validate array shapes and create results DataFrame safely.
+    
+    Args:
+        y_pred: Predicted values array
+        y_true: True values array
+        pred_col: Column name for predictions
+        true_col: Column name for true values
+    
+    Returns:
+        pandas DataFrame with predictions and true values
+    
+    Raises:
+        ValueError: If arrays have incompatible shapes
+        TypeError: If inputs are not array-like
+    """
+    # Convert to numpy arrays if needed
+    try:
+        y_pred = np.asarray(y_pred)
+        y_true = np.asarray(y_true)
+    except (ValueError, TypeError) as e:
+        raise TypeError(f"Unable to convert inputs to numpy arrays: {e}")
+    
+    # Flatten arrays to ensure 1D
+    y_pred_flat = y_pred.flatten()
+    y_true_flat = y_true.flatten()
+    
+    # Validate shapes match
+    if y_pred_flat.shape[0] != y_true_flat.shape[0]:
+        raise ValueError(
+            f"Shape mismatch: predictions have {y_pred_flat.shape[0]} elements "
+            f"but true values have {y_true_flat.shape[0]} elements. "
+            f"This may indicate an error in model prediction or data processing. "
+            f"Original shapes - predictions: {y_pred.shape}, true values: {y_true.shape}"
+        )
+    
+    # Validate non-empty arrays
+    if y_pred_flat.shape[0] == 0:
+        raise ValueError("Cannot create DataFrame from empty arrays")
+    
+    # Create DataFrame using column stack for clarity
+    results_df = pd.DataFrame({
+        pred_col: y_pred_flat,
+        true_col: y_true_flat
+    })
+    
+    return results_df
+
+
+# In[ ]:
+
+
 y_test_pred = y_test_pred.flatten()
 
 
 # In[ ]:
 
 
-final_df = pd.DataFrame(np.hstack((y_test_pred[:, np.newaxis], y_test[:, np.newaxis])), columns=['Prediction', 'Real'])
+# Validate array shapes before creating DataFrame
+final_df = validate_and_create_results_df(y_test_pred, y_test, pred_col='Prediction', true_col='Real')
 
 
 # In[ ]:
@@ -514,7 +611,8 @@ model_acc_pca(svm)
 
 y_test_pred = rf.predict(x_test_pca)
 y_test_pred = y_test_pred.flatten()
-final_df_pca = pd.DataFrame(np.hstack((y_test_pred[:, np.newaxis], y_test[:, np.newaxis])), columns=['Prediction', 'Real'])
+# Validate array shapes before creating DataFrame
+final_df_pca = validate_and_create_results_df(y_test_pred, y_test, pred_col='Prediction', true_col='Real')
 
 
 # In[ ]:
@@ -614,7 +712,8 @@ model_acc_no_scale(svm)
 
 y_test_pred = rf.predict(X_test)
 y_test_pred = y_test_pred.flatten()
-final_dfr = pd.DataFrame(np.hstack((y_test_pred[:, np.newaxis], y_test[:, np.newaxis])), columns=['Prediction', 'Real'])
+# Validate array shapes before creating DataFrame
+final_dfr = validate_and_create_results_df(y_test_pred, y_test, pred_col='Prediction', true_col='Real')
 
 
 # In[ ]:
