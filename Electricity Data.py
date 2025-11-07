@@ -51,7 +51,7 @@ df.shape
 df.info()
 
 
-# ##### Here, ForecastWindProduction, SystemLoadEA, SMPEA, ORKTemperature, ORKWindspeed, CO2Intensity, ActualWindProduction, SystemLoadEP2, SMPEP2 should be numeric values. Hance, Converting them into numeric type is needed.
+# ##### Here, ForecastWindProduction, SystemLoadEA, SMPEA, ORKTemperature, ORKWindspeed, CO2Intensity, ActualWindProduction, SystemLoadEP2, SMPEP2 should be numeric values. Hence, converting them into numeric type is needed.
 
 # In[7]:
 
@@ -65,7 +65,7 @@ df.info()
 # In[8]:
 
 
-missing_values =df.isnull().sum()
+missing_values = df.isnull().sum()
 print(missing_values)
 
 
@@ -118,7 +118,7 @@ df_cleaned = df.dropna(subset=['ORKTemperature','ORKWindspeed'])
 df_cleaned.shape
 
 
-# ##### Because of having more missing values in ORKTemperature, ORKWindspeed columns, If they filled with mean or median, it can be error for model. So Null values were removed.
+# ##### Because of having many missing values in ORKTemperature and ORKWindspeed columns, filling them with mean or median could introduce errors in the model. Therefore, null values were removed.
 
 # ### Removing Outliers
 
@@ -143,27 +143,27 @@ df_cleaned.shape
 # In[17]:
 
 
-fill_with_median = ['ForecastWindProduction','SystemLoadEA','SMPEA','ActualWindProduction', 'SystemLoadEP2', 'SMPEP2']
+fill_with_median = ['ForecastWindProduction', 'SystemLoadEA', 'SMPEA', 'ActualWindProduction', 'SystemLoadEP2', 'SMPEP2']
 for col in fill_with_median:
     median_col = df_cleaned[col].median()
-    df_cleaned[col].fillna(median_col,inplace=True)
+    df_cleaned[col].fillna(median_col, inplace=True)
 
 
-# ##### Because of having skewed distribution on 'ForecastWindProduction','SystemLoadEA','SMPEA','ActualWindProduction', 'SystemLoadEP2', 'SMPEP2' columns. Missing values were filled with median.
+# ##### Because of having skewed distributions in 'ForecastWindProduction', 'SystemLoadEA', 'SMPEA', 'ActualWindProduction', 'SystemLoadEP2', 'SMPEP2' columns, missing values were filled with median.
 
 # In[18]:
 
 
 mean_CO2Intensity = df_cleaned['CO2Intensity'].mean()
-df_cleaned['CO2Intensity'].fillna(mean_CO2Intensity,inplace=True)
+df_cleaned['CO2Intensity'].fillna(mean_CO2Intensity, inplace=True)
 
 
-# ##### CO2Intensity has normal dustribution. So null values were filled with mean value of the CO2Intensity.
+# ##### CO2Intensity has a normal distribution. Therefore, null values were filled with the mean value of CO2Intensity.
 
 # In[19]:
 
 
-missing_values =df_cleaned.isna().sum()
+missing_values = df_cleaned.isna().sum()
 print(missing_values)
 
 
@@ -186,25 +186,25 @@ df_cleaned.head()
 # plt.title('Correlation for elecricity data')
 # plt.show()
 
-# #### By studing Heatmap, Following observations can be gathered.
+# #### By studying the heatmap, the following observations can be gathered:
 # ###### Highly positive correlation between month and weekofyear
 # ###### Highly positive correlation between ForecastWindProduction and ActualWindProduction
 # ###### Highly positive correlation between SystemLoadEA and SystemLoadEA2
 # ###### Highly positive correlation between ORKWindspeed and ForecastWindProduction
 # ###### Highly positive correlation between ORKWindspeed and ActualWindProduction
 
-# ####  If some features in dataset have high correlation, it is often a good idea to consider ignoring or removing one of the highly correlated features.
-# #### It can be cause to multicolinearity, increase model complexity, reduse model performence. Hance, one feature can be ignored.
-# ###### ** Month might be more straightforward and useful in many contexts compared to WeekOfYear. So ,WeekOfYear was removed.
+# #### If some features in the dataset have high correlation, it is often a good idea to consider ignoring or removing one of the highly correlated features.
+# #### It can cause multicollinearity, increase model complexity, and reduce model performance. Hence, one feature can be ignored.
+# ###### ** Month might be more straightforward and useful in many contexts compared to WeekOfYear. Therefore, WeekOfYear was removed.
 # ###### ** To get more accurate model, I think removing ForecastWindProduction column is suitable.
-# ###### ** SystemLoadEA is forecasted national load and SystemLoadEA2 is actual national system load. hance, Removing SystemLoadEA is more accurate.
-# ###### ** Because of model requament, ORKWindspeed or ActualWindProduction weren't removed. ForecastWindProduction has already removed.
+# ###### ** SystemLoadEA is forecasted national load and SystemLoadEP2 is actual national system load. Hence, removing SystemLoadEA is more accurate.
+# ###### ** Because of model requirements, ORKWindspeed or ActualWindProduction weren't removed. ForecastWindProduction was already removed.
 # ###### ** Holiday column is also populated. Hence, Holiday column can be removed.
 
 # In[21]:
 
 
-df_new = df_cleaned.drop(columns=['Holiday','WeekOfYear','ForecastWindProduction','SystemLoadEA'])
+df_new = df_cleaned.drop(columns=['Holiday', 'WeekOfYear', 'ForecastWindProduction', 'SystemLoadEA'])
 
 
 # In[22]:
@@ -236,24 +236,24 @@ df_scaled.columns
 # In[26]:
 
 
-f, ax = plt.subplots(nrows=1, ncols=1, figsize=(20,3))
-sns.lineplot(x=df_scaled.DateTime, y = df_scaled.Month)
+f, ax = plt.subplots(nrows=1, ncols=1, figsize=(20, 3))
+sns.lineplot(x=df_scaled.DateTime, y=df_scaled.Month)
 plt.show()
 
 
 # In[27]:
 
 
-f, ax = plt.subplots(nrows=1, ncols=1, figsize=(20,3))
-sns.lineplot(x=df_scaled.DateTime, y = df_scaled.DayOfWeek)
+f, ax = plt.subplots(nrows=1, ncols=1, figsize=(20, 3))
+sns.lineplot(x=df_scaled.DateTime, y=df_scaled.DayOfWeek)
 plt.show()
 
 
 # In[28]:
 
 
-f, ax = plt.subplots(nrows=1, ncols=1, figsize=(20,3))
-sns.lineplot(x=df_scaled.DateTime, y = df_scaled.Day)
+f, ax = plt.subplots(nrows=1, ncols=1, figsize=(20, 3))
+sns.lineplot(x=df_scaled.DateTime, y=df_scaled.Day)
 plt.show()
 
 
@@ -262,23 +262,24 @@ plt.show()
 
 from datetime import date
 
-f, ax = plt.subplots(nrows=1, ncols=1, figsize=(20,3))
-sns.lineplot(x=df_scaled.DateTime, y = df_scaled.PeriodOfDay)
-ax.set_xlim([date(2013,12,1),date(2014,1,1)])
+f, ax = plt.subplots(nrows=1, ncols=1, figsize=(20, 3))
+sns.lineplot(x=df_scaled.DateTime, y=df_scaled.PeriodOfDay)
+ax.set_xlim([date(2013, 12, 1), date(2014, 1, 1)])
 plt.show()
 
 
-# ##### By looking above graphs, We can see cyclic nature.Convert cyclic features into two continuous features using sine and cosine transformations to preserve the cyclic nature.Sine and Cosine functions help in representing the cyclic nature by mapping the feature to a circle. 
+# ##### By looking at the above graphs, we can see cyclic patterns. Convert cyclic features into two continuous features using sine and cosine transformations to preserve the cyclic nature. Sine and cosine functions help in representing the cyclic nature by mapping the feature to a circle. 
 
 # ## Feature Engineering
 
 # In[ ]:
 
 
-def periodic_transform(df,variable):
-    df_scaled[f"{variable}_SIN"] = np.sin(df_scaled[variable] / df_scaled[variable].max()*2*np.pi)
-    df_scaled[f"{variable}_COS"] = np.cos(df_scaled[variable] / df_scaled[variable].max()*2*np.pi)
-    return df_scaled
+def periodic_transform(df, variable):
+    """Transform cyclic features into sine and cosine components."""
+    df[f"{variable}_SIN"] = np.sin(df[variable] / df[variable].max() * 2 * np.pi)
+    df[f"{variable}_COS"] = np.cos(df[variable] / df[variable].max() * 2 * np.pi)
+    return df
 
 
 # In[ ]:
@@ -291,12 +292,12 @@ df_scaled = periodic_transform(df_scaled, 'PeriodOfDay')
 df_scaled.head()
 
 
-# ##### Hence, DayOfWeek, Day, Month, and PeriodOfDay  columns can be removed.
+# ##### Hence, DayOfWeek, Day, Month, and PeriodOfDay columns can be removed.
 
 # In[ ]:
 
 
-df_scaled = df_scaled.drop(columns=['DateTime','DayOfWeek','Day','Month','PeriodOfDay'])
+df_scaled = df_scaled.drop(columns=['DateTime', 'DayOfWeek', 'Day', 'Month', 'PeriodOfDay'])
 
 
 # In[ ]:
@@ -316,7 +317,7 @@ df_scaled.head()
 # In[ ]:
 
 
-x = df_scaled.drop(columns = 'SMPEP2', axis = 1)
+x = df_scaled.drop(columns='SMPEP2', axis=1)
 y = df_scaled['SMPEP2']
 
 
@@ -329,13 +330,13 @@ from sklearn.model_selection import train_test_split
 # In[ ]:
 
 
-x_train,x_test,y_train,y_test = train_test_split(x,y,test_size = 0.2,random_state=42)
+x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=42)
 
 
 # ### Scaling data
 
-# #### HolidayFlag column 0 and 1 values. Hence, no need to encord this column.
-# #### As most of columns having skewed distribution, minmaxscaler canbe applied for those columns such as Year,SMPEA,ORKTemperature,ORKWindspeed,ActualWindProduction,CO2Intensity,SystemLoadEP2,and SMPEP2
+# #### HolidayFlag column has 0 and 1 values. Hence, no need to encode this column.
+# #### As most columns have skewed distributions, MinMaxScaler can be applied for those columns such as Year, SMPEA, ORKTemperature, ORKWindspeed, ActualWindProduction, CO2Intensity, SystemLoadEP2, and SMPEP2.
 # 
 
 # In[ ]:
@@ -360,9 +361,10 @@ x_test_scaled = mm.transform(x_test)
 
 
 def model_acc(model):
-    model.fit(x_train_scaled,y_train)
-    acc = model.score(x_test_scaled,y_test)
-    print(str(model)+'-->'+str(acc))
+    """Train model and print accuracy score."""
+    model.fit(x_train_scaled, y_train)
+    acc = model.score(x_test_scaled, y_test)
+    print(f'{model.__class__.__name__} --> {acc:.4f}')
 
 
 # In[ ]:
@@ -433,9 +435,9 @@ print(f'MSE: {mean_squared_error(final_df["Prediction"],final_df["Real"])}')
 
 
 fig, ax = plt.subplots(figsize=(20, 5))
-sns.lineplot(x=range(len(final_df['Real'])) ,y=final_df['Real'],color='black',label='Real')
-sns.lineplot(x=range(len(final_df['Prediction'])),y=final_df['Prediction'],color='red',label='Prediction')
-ax.set_xlim([100,200])
+sns.lineplot(x=range(len(final_df['Real'])), y=final_df['Real'], color='black', label='Real')
+sns.lineplot(x=range(len(final_df['Prediction'])), y=final_df['Prediction'], color='red', label='Prediction')
+ax.set_xlim([100, 200])
 plt.title('Real vs. Predictions')
 plt.show()
 
@@ -468,7 +470,7 @@ plt.show()
 # In[ ]:
 
 
-pca = PCA(n_components= 11)
+pca = PCA(n_components=11)
 x_train_pca = pca.fit_transform(x_train_scaled)
 x_test_pca = pca.transform(x_test_scaled)
 
@@ -477,9 +479,10 @@ x_test_pca = pca.transform(x_test_scaled)
 
 
 def model_acc_pca(model):
-    model.fit(x_train_pca,y_train)
-    acc = model.score(x_test_pca,y_test)
-    print(str(model)+'-->'+str(acc))
+    """Train model on PCA-transformed data and print accuracy score."""
+    model.fit(x_train_pca, y_train)
+    acc = model.score(x_test_pca, y_test)
+    print(f'{model.__class__.__name__} --> {acc:.4f}')
 
 
 # In[ ]:
@@ -525,16 +528,16 @@ print(f'MSE: {mean_squared_error(final_df_pca["Prediction"],final_df_pca["Real"]
 
 
 fig, ax = plt.subplots(figsize=(20, 5))
-sns.lineplot(x=range(len(final_df_pca['Real'])) ,y=final_df_pca['Real'],color='black',label='Real')
-sns.lineplot(x=range(len(final_df_pca['Prediction'])),y=final_df_pca['Prediction'],color='red',label='Prediction')
-ax.set_xlim([100,200])
+sns.lineplot(x=range(len(final_df_pca['Real'])), y=final_df_pca['Real'], color='black', label='Real')
+sns.lineplot(x=range(len(final_df_pca['Prediction'])), y=final_df_pca['Prediction'], color='red', label='Prediction')
+ax.set_xlim([100, 200])
 plt.title('Real vs. Predictions')
 plt.show()
 
 
-# ##### Here, The best model can be defined as Random Forest Regressor. But here, model score is lower than modelling without PCA transformed Data. Hence, Previous senario can be applied.
+# ##### Here, the best model can be defined as Random Forest Regressor. However, the model score is lower than modelling without PCA-transformed data. Hence, the previous scenario can be applied.
 
-# ### Defining modes for Data Without scaling and PCA
+# ### Defining models for data without scaling and PCA
 
 # In[ ]:
 
@@ -557,7 +560,7 @@ df_new.head()
 # In[ ]:
 
 
-X = df_new.drop(columns = ['DateTime','SMPEP2'],axis=1)
+X = df_new.drop(columns=['DateTime', 'SMPEP2'], axis=1)
 
 
 # In[ ]:
@@ -569,16 +572,17 @@ Y = df_new['SMPEP2']
 # In[ ]:
 
 
-X_train,X_test,Y_train,Y_test = train_test_split(X,Y,test_size=0.2,random_state=42)
+X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, random_state=42)
 
 
 # In[ ]:
 
 
 def model_acc_no_scale(model):
-    model.fit(X_train,Y_train)
-    acc = model.score(X_test,Y_test)
-    print(str(model)+'-->'+str(acc))
+    """Train model on unscaled data and print accuracy score."""
+    model.fit(X_train, Y_train)
+    acc = model.score(X_test, Y_test)
+    print(f'{model.__class__.__name__} --> {acc:.4f}')
 
 
 # In[ ]:
@@ -624,12 +628,22 @@ print(f'MSE: {mean_squared_error(final_dfr["Prediction"],final_dfr["Real"])}')
 
 
 fig, ax = plt.subplots(figsize=(20, 5))
-sns.lineplot(x=range(len(final_dfr['Real'])) ,y=final_dfr['Real'],color='black',label='Real')
-sns.lineplot(x=range(len(final_dfr['Prediction'])),y=final_dfr['Prediction'],color='red',label='Prediction')
-ax.set_xlim([100,200])
+sns.lineplot(x=range(len(final_dfr['Real'])), y=final_dfr['Real'], color='black', label='Real')
+sns.lineplot(x=range(len(final_dfr['Prediction'])), y=final_dfr['Prediction'], color='red', label='Prediction')
+ax.set_xlim([100, 200])
 plt.title('Real vs. Predictions')
 plt.show()
 
+
+# #### Here also, the best model is Random Forest Regressor and it's score is lower than modelling with the scaled data.
+
+# ## Conclusion
+
+# ###### According to the previous results, in this scenario, data can be used without PCA transformation. 
+# ###### The most suitable model is Random Forest Regressor and its model score (R²) is 0.6502.
+# ###### Here, the mean absolute error is 8.5611 and the mean squared error is 407.1928. These are relatively low values.
+# ###### By studying the graph of "Real vs. Predictions", similar patterns can be seen.
+# ###### Hence, Random Forest Regressor can be defined as the most suitable model for the electricity data among LinearRegression, Lasso, DecisionTreeRegressor, RandomForestRegressor, and SVR.
 
 # #### Here also, the best model is Random Forest Regressor and it's score is lower than modelling with the scaled data.
 
