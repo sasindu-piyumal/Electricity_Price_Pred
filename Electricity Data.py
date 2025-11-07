@@ -16,13 +16,52 @@ import numpy as np
 import warnings
 warnings.filterwarnings('ignore')
 
+# Import configuration and path validation utilities
+import config
+from config import PathValidationError
+
 
 # ## Importing Data set
 
 # In[2]:
 
 
-data = pd.read_csv("Z:\\Sasindu\\Data set\\electricity.csv", index_col=0, parse_dates=[0])
+# Load data file using validated configuration path
+try:
+    validated_data_path = config.get_validated_data_file_path()
+    data = pd.read_csv(validated_data_path, index_col=0, parse_dates=[0])
+except PathValidationError as e:
+    print(f"ERROR: Path validation failed")
+    print(f"{e}")
+    print(f"\nTroubleshooting:")
+    print(f"1. Ensure 'electricity.csv' exists in the project directory: {config.PROJECT_ROOT}")
+    print(f"2. Check file permissions are correct")
+    print(f"3. Verify the path in config.py is correct")
+    raise
+except FileNotFoundError as e:
+    print(f"ERROR: Data file not found")
+    print(f"Expected location: {config.DATA_FILE_PATH}")
+    print(f"\nTroubleshooting:")
+    print(f"1. Place 'electricity.csv' in the project directory")
+    print(f"2. Update DATA_FILE_PATH in config.py if using a different location")
+    raise
+except pd.errors.EmptyDataError as e:
+    print(f"ERROR: Data file is empty")
+    print(f"File: {config.DATA_FILE_PATH}")
+    raise
+except pd.errors.ParserError as e:
+    print(f"ERROR: Failed to parse CSV file")
+    print(f"File: {config.DATA_FILE_PATH}")
+    print(f"Error: {e}")
+    print(f"\nTroubleshooting:")
+    print(f"1. Verify the file is a valid CSV")
+    print(f"2. Check for formatting issues")
+    raise
+except Exception as e:
+    print(f"ERROR: Unexpected error loading data")
+    print(f"File: {config.DATA_FILE_PATH}")
+    print(f"Error: {e}")
+    raise
 
 
 # In[3]:
