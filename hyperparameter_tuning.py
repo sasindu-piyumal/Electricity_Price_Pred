@@ -73,7 +73,8 @@ def load_and_preprocess_data():
     
     # Remove outliers from SMPEP2
     print("\n4. Removing outliers...")
-    SMPEP2_out = (df_cleaned['SMPEP2'] > 0) | (df_cleaned['SMPEP2'] <= 550)
+    # Fixed: Changed OR (|) to AND (&) to properly filter values between 0 and 550
+    SMPEP2_out = (df_cleaned['SMPEP2'] > 0) & (df_cleaned['SMPEP2'] <= 550)
     df_cleaned = df_cleaned[SMPEP2_out]
     
     # Fill missing values with median for skewed distributions
