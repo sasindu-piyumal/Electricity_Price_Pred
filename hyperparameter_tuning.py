@@ -13,7 +13,8 @@ import pandas as pd
 import numpy as np
 import warnings
 import time
-import pickle
+import json
+import joblib
 from datetime import datetime
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -427,16 +428,86 @@ def analyze_hyperparameter_impact(search_results):
     
     return param_impacts, results_df
 
-def save_results(results_dict, filename='tuning_results.pkl'):
+def save_results(results_dict, filename='tuning_results.json'):
     """
-    Save all tuning results to a pickle file.
+    Save all tuning results to JSON and joblib files with proper error handling.
+    Models are saved separately using joblib for security and efficiency.
     """
     print(f"\n17. Saving results to {filename}...")
     
-    with open(filename, 'wb') as f:
-        pickle.dump(results_dict, f)
-    
-    print(f"    Results saved successfully!")
+    try:
+        # Prepare JSON-serializable data (excluding sklearn objects)
+        json_results = {
+            'baseline_model': {
+                'metrics': {
+                    'r2': float(results_dict['baseline_model']['metrics']['r2']),
+                    'mae': float(results_dict['baseline_model']['metrics']['mae']),
+                    'mse': float(results_dict['baseline_model']['metrics']['mse']),
+                    'rmse': float(results_dict['baseline_model']['metrics']['rmse'])
+                },
+                'r2': float(results_dict['baseline_model']['r2'])
+            },
+            'random_search': {
+                'best_params': results_dict['random_search']['best_params'],
+                'best_score_cv': float(results_dict['random_search']['best_score_cv']),
+                'time_minutes': float(results_dict['random_search']['time_minutes'])
+            },
+            'grid_search': {
+                'best_params': results_dict['grid_search']['best_params'],
+                'best_score_cv': float(results_dict['grid_search']['best_score_cv']),
+                'time_minutes': float(results_dict['grid_search']['time_minutes']),
+                'refined_grid': results_dict['grid_search']['refined_grid']
+            },
+            'best_model': {
+                'metrics': {
+                    'r2': float(results_dict['best_model']['metrics']['r2']),
+                    'mae': float(results_dict['best_model']['metrics']['mae']),
+                    'mse': float(results_dict['best_model']['metrics']['mse']),
+                    'rmse': float(results_dict['best_model']['metrics']['rmse'])
+                },
+                'r2': float(results_dict['best_model']['r2']),
+                'feature_importance': results_dict['best_model']['feature_importance'].to_dict('records')
+            },
+            'metadata': {
+                'total_time_minutes': float(results_dict['metadata']['total_time_minutes']),
+                'random_state': int(results_dict['metadata']['random_state']),
+                'cv_splits': int(results_dict['metadata']['cv_splits']),
+                'train_shape': list(results_dict['metadata']['train_shape']),
+                'test_shape': list(results_dict['metadata']['test_shape']),
+                'timestamp': results_dict['metadata']['timestamp']
+            }
+        }
+        
+        # Save JSON data
+        with open(filename, 'w') as f:
+            json.dump(json_results, f, indent=2)
+        print(f"    Metadata and metrics saved to {filename}")
+        
+        # Save models separately using joblib (more secure than pickle for sklearn)
+        model_filename = filename.replace('.json', '_models.joblib')
+        models = {
+            'baseline_model': results_dict['baseline_model']['model'],
+            'best_model': results_dict['best_model']['model'],
+            'random_search': results_dict['random_search']['search_object'],
+            'grid_search': results_dict['grid_search']['search_object']
+        }
+        joblib.dump(models, model_filename)
+        print(f"    Models saved to {model_filename}")
+        
+        print(f"    Results saved successfully!")
+        
+    except PermissionError as e:
+        print(f"    ❌ ERROR: Permission denied when writing to {filename}")
+        print(f"       Please check file permissions and try again.")
+        raise
+    except OSError as e:
+        print(f"    ❌ ERROR: OS error occurred: {str(e)}")
+        print(f"       This could be due to disk full, invalid path, or other I/O issues.")
+        raise
+    except Exception as e:
+        print(f"    ❌ ERROR: Failed to save results: {str(e)}")
+        print(f"       Critical tuning results may be lost!")
+        raise
 
 def create_comparison_plot(baseline_r2, final_r2, y_test, y_pred):
     """
@@ -631,7 +702,8 @@ def main():
                 print(f"  - {param}: {value}")
         
         print("\nFiles saved:")
-        print("  - tuning_results.pkl (complete results)")
+        print("  - tuning_results.json (metrics and metadata)")
+        print("  - tuning_results_models.joblib (trained models)")
         print("  - feature_importance.png")
         print("  - model_comparison.png")
         

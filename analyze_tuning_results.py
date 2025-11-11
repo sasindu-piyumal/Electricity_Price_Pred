@@ -5,22 +5,24 @@
 Utility script to analyze saved hyperparameter tuning results.
 """
 
-import pickle
+import json
+import joblib
 import pandas as pd
 import numpy as np
 
-def load_and_analyze_results(filename='tuning_results.pkl'):
+def load_and_analyze_results(filename='tuning_results.json'):
     """
     Load and display analysis of hyperparameter tuning results.
+    Uses JSON for secure data loading instead of pickle.
     """
     print("="*80)
     print("HYPERPARAMETER TUNING RESULTS ANALYSIS")
     print("="*80)
     
     try:
-        # Load results
-        with open(filename, 'rb') as f:
-            results = pickle.load(f)
+        # Load results from JSON (secure alternative to pickle)
+        with open(filename, 'r') as f:
+            results = json.load(f)
         
         # Extract key information
         baseline_r2 = results['baseline_model']['r2']
@@ -61,7 +63,9 @@ def load_and_analyze_results(filename='tuning_results.pkl'):
         print(f"  GridSearchCV: {results['grid_search']['time_minutes']:.2f} minutes")
         
         print(f"\nTop 5 Important Features:")
-        feature_importance = results['best_model']['feature_importance']
+        feature_importance_list = results['best_model']['feature_importance']
+        # Convert from list of dicts back to DataFrame
+        feature_importance = pd.DataFrame(feature_importance_list)
         for idx, row in feature_importance.head(5).iterrows():
             print(f"  {row['feature']}: {row['importance']:.4f}")
         
@@ -76,6 +80,9 @@ def load_and_analyze_results(filename='tuning_results.pkl'):
         
     except FileNotFoundError:
         print(f"Error: {filename} not found. Please run hyperparameter_tuning.py first.")
+    except json.JSONDecodeError as e:
+        print(f"Error: Invalid JSON format in {filename}")
+        print(f"       {str(e)}")
     except Exception as e:
         print(f"Error loading results: {str(e)}")
     
