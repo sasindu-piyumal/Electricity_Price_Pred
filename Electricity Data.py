@@ -16,13 +16,32 @@ import numpy as np
 import warnings
 warnings.filterwarnings('ignore')
 
+# Import secure path handling utility
+from path_utils import get_safe_path_str
+
+# Import data validation utilities
+from data_validation import validate_csv_file, DataValidationError
+
 
 # ## Importing Data set
 
 # In[2]:
 
 
-data = pd.read_csv("Z:\\Sasindu\\Data set\\electricity.csv", index_col=0, parse_dates=[0])
+# Load data using secure, configurable path with validation
+# Path can be configured via DATA_PATH environment variable in .env file
+# Default: ./electricity.csv
+try:
+    print("Loading and validating data...")
+    data_path = get_safe_path_str()
+    data = validate_csv_file(data_path)
+    print("Data loaded and validated successfully!\n")
+except DataValidationError as e:
+    print(f"ERROR: Data validation failed: {e}")
+    raise
+except Exception as e:
+    print(f"ERROR: Failed to load data: {e}")
+    raise
 
 
 # In[3]:
