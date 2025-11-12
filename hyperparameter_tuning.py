@@ -13,7 +13,10 @@ import pandas as pd
 import numpy as np
 import warnings
 import time
-import pickle
+# SECURITY WARNING: Standard pickle is being replaced with safe_pickle module
+# Pickle files can execute arbitrary code during deserialization via __reduce__
+# The safe_pickle module implements class whitelisting and hash verification
+# For more information, see SECURITY.md
 from datetime import datetime
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -32,6 +35,12 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 # Suppress warnings
 warnings.filterwarnings('ignore')
 
+# Import secure path handling utility
+from path_utils import get_safe_path_str
+
+# Import data validation utilities
+from data_validation import validate_csv_file, DataValidationError
+
 # Set random seed for reproducibility
 RANDOM_STATE = 42
 np.random.seed(RANDOM_STATE)
@@ -48,13 +57,25 @@ def load_and_preprocess_data():
     Load and preprocess the electricity dataset following the same steps
     as in the original implementation.
     """
-    print("\n1. Loading Data...")
+    print("\n1. Loading and Validating Data...")
     
-    # Load data
-    data = pd.read_csv("electricity.csv", index_col=0, parse_dates=[0])
-    df = pd.DataFrame(data)
-    
-    print(f"   - Dataset shape: {df.shape}")
+    # Load data using secure, configurable path with validation
+    # Path can be configured via DATA_PATH environment variable in .env file
+    # Default: ./electricity.csv
+    try:
+        data_path = get_safe_path_str()
+        data = validate_csv_file(data_path)
+        df = pd.DataFrame(data)
+        print(f"   - Data validation successful!")
+        print(f"   - Dataset shape: {df.shape}")
+    except DataValidationError as e:
+        print(f"\n   ERROR: Data validation failed!")
+        print(f"   {e}")
+        raise
+    except Exception as e:
+        print(f"\n   ERROR: Failed to load data!")
+        print(f"   {e}")
+        raise
     
     # Convert columns to numeric
     print("\n2. Converting columns to numeric...")
