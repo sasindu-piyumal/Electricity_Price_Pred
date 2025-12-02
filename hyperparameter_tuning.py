@@ -13,7 +13,7 @@ import pandas as pd
 import numpy as np
 import warnings
 import time
-import pickle
+import joblib
 from datetime import datetime
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -427,14 +427,13 @@ def analyze_hyperparameter_impact(search_results):
     
     return param_impacts, results_df
 
-def save_results(results_dict, filename='tuning_results.pkl'):
+def save_results(results_dict, filename='tuning_results.joblib'):
     """
-    Save all tuning results to a pickle file.
+    Save all tuning results using joblib (secure alternative to pickle).
     """
     print(f"\n17. Saving results to {filename}...")
     
-    with open(filename, 'wb') as f:
-        pickle.dump(results_dict, f)
+    joblib.dump(results_dict, filename)
     
     print(f"    Results saved successfully!")
 
@@ -631,7 +630,7 @@ def main():
                 print(f"  - {param}: {value}")
         
         print("\nFiles saved:")
-        print("  - tuning_results.pkl (complete results)")
+        print("  - tuning_results.joblib (complete results)")
         print("  - feature_importance.png")
         print("  - model_comparison.png")
         

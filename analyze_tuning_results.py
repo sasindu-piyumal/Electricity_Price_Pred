@@ -5,11 +5,11 @@
 Utility script to analyze saved hyperparameter tuning results.
 """
 
-import pickle
+import joblib
 import pandas as pd
 import numpy as np
 
-def load_and_analyze_results(filename='tuning_results.pkl'):
+def load_and_analyze_results(filename='tuning_results.joblib'):
     """
     Load and display analysis of hyperparameter tuning results.
     """
@@ -18,9 +18,8 @@ def load_and_analyze_results(filename='tuning_results.pkl'):
     print("="*80)
     
     try:
-        # Load results
-        with open(filename, 'rb') as f:
-            results = pickle.load(f)
+        # Load results using joblib (secure alternative to pickle)
+        results = joblib.load(filename)
         
         # Extract key information
         baseline_r2 = results['baseline_model']['r2']
