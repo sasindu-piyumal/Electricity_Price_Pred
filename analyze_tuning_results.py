@@ -5,6 +5,7 @@
 Utility script to analyze saved hyperparameter tuning results.
 """
 
+import sys
 import pickle
 import pandas as pd
 import numpy as np
@@ -39,15 +40,67 @@ def load_and_analyze_results(filename='tuning_results.pkl'):
         baseline_metrics = results['baseline_model']['metrics']
         optimized_metrics = results['best_model']['metrics']
         
-        for metric in ['r2', 'mae', 'mse', 'rmse']:
-            baseline_val = baseline_metrics[metric]
-            optimized_val = optimized_metrics[metric]
-            if metric == 'r2':
-                change = ((optimized_val - baseline_val) / baseline_val) * 100
-                print(f"  {metric.upper():<10} {baseline_val:>12.4f} {optimized_val:>12.4f} {change:>11.1f}%")
+        try:
+            # Define required metrics
+            required_metrics = ['r2', 'mae', 'mse', 'rmse']
+            
+            # Validate baseline_metrics
+            missing_baseline = [m for m in required_metrics if m not in baseline_metrics]
+            if missing_baseline:
+                print(f"  Warning: Missing baseline metrics: {missing_baseline}")
+                print(f"  Available baseline metrics: {list(baseline_metrics.keys())}")
+                # Use only available metrics
+                required_metrics = [m for m in required_metrics if m in baseline_metrics]
+            
+            # Validate optimized_metrics
+            missing_optimized = [m for m in required_metrics if m not in optimized_metrics]
+            if missing_optimized:
+                print(f"  Warning: Missing optimized metrics: {missing_optimized}")
+                print(f"  Available optimized metrics: {list(optimized_metrics.keys())}")
+                required_metrics = [m for m in required_metrics if m in optimized_metrics and m in baseline_metrics]
+            
+            # Check if we have any common metrics
+            if not required_metrics:
+                print("  Error: No common metrics found between baseline and optimized results")
+                print(f"  Baseline metrics: {list(baseline_metrics.keys())}")
+                print(f"  Optimized metrics: {list(optimized_metrics.keys())}")
+                print("  Skipping metrics comparison...")
             else:
-                change = ((baseline_val - optimized_val) / baseline_val) * 100
-                print(f"  {metric.upper():<10} {baseline_val:>12.4f} {optimized_val:>12.4f} {-change:>11.1f}%")
+                # Use required_metrics list and .get() for safe access
+                for metric in required_metrics:
+                    baseline_val = baseline_metrics.get(metric, 0)
+                    optimized_val = optimized_metrics.get(metric, 0)
+                    
+                    # Validate numeric types
+                    if baseline_val is None or pd.isna(baseline_val):
+                        print(f"  Warning: Baseline {metric} is None or NaN, using 0")
+                        baseline_val = 0
+                    if optimized_val is None or pd.isna(optimized_val):
+                        print(f"  Warning: Optimized {metric} is None or NaN, using 0")
+                        optimized_val = 0
+                    
+                    # Calculate and display comparison
+                    if metric == 'r2':
+                        if baseline_val != 0:
+                            change = ((optimized_val - baseline_val) / baseline_val) * 100
+                            print(f"  {metric.upper():<10} {baseline_val:>12.4f} {optimized_val:>12.4f} {change:>11.1f}%")
+                        else:
+                            print(f"  {metric.upper():<10} {baseline_val:>12.4f} {optimized_val:>12.4f} {'N/A':>12}")
+                    else:
+                        if baseline_val != 0:
+                            change = ((baseline_val - optimized_val) / baseline_val) * 100
+                            print(f"  {metric.upper():<10} {baseline_val:>12.4f} {optimized_val:>12.4f} {-change:>11.1f}%")
+                        else:
+                            print(f"  {metric.upper():<10} {baseline_val:>12.4f} {optimized_val:>12.4f} {'N/A':>12}")
+        
+        except KeyError as e:
+            print(f"  Error: Missing metric key: {e}")
+            print(f"  Baseline metrics available: {list(baseline_metrics.keys())}")
+            print(f"  Optimized metrics available: {list(optimized_metrics.keys())}")
+            print("  Skipping metrics comparison...")
+        except Exception as e:
+            print(f"  Error during metrics comparison: {str(e)}")
+            print("  Skipping metrics comparison...")
         
         print(f"\nBest Hyperparameters:")
         best_params = results['grid_search']['best_params']
