@@ -23,7 +23,7 @@ Utility script to load and analyze saved tuning results:
 - Timing information
 
 ### 3. Output Files
-- `tuning_results.pkl`: Complete results including models, parameters, metrics, and analysis
+- `tuning_results.joblib`: Complete results including models, parameters, metrics, and analysis (saved using joblib for secure serialization)
 - `feature_importance.png`: Bar chart of top 15 most important features
 - `model_comparison.png`: Visual comparison of baseline vs optimized model performance
 
@@ -112,3 +112,4 @@ The tuning process aims to:
 1. **Memory Usage**: The script uses `n_jobs=-1` for parallel processing. Adjust if memory constraints exist.
 2. **Data Path**: Update the data path in `load_and_preprocess_data()` if needed.
 3. **Validation**: The implementation assumes validation is disabled as per task requirements.
+4. **Security**: The implementation uses `joblib` instead of `pickle` for serialization. Joblib is the recommended secure method for saving scikit-learn models and is more resistant to arbitrary code execution vulnerabilities compared to pickle.
