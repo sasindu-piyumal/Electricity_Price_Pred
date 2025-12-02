@@ -46,7 +46,7 @@ print("=" * 80)
 def load_and_preprocess_data():
     """
     Load and preprocess the electricity dataset following the same steps
-    as in the original implementation.
+    as in the original implementation. Optimized with vectorized operations.
     """
     print("\n1. Loading Data...")
     
@@ -56,15 +56,16 @@ def load_and_preprocess_data():
     
     print(f"   - Dataset shape: {df.shape}")
     
-    # Convert columns to numeric
+    # Convert columns to numeric (vectorized)
     print("\n2. Converting columns to numeric...")
     cols_to_numeric = ['ForecastWindProduction', 'SystemLoadEA', 'SMPEA', 
                       'ORKTemperature', 'ORKWindspeed', 'CO2Intensity', 
                       'ActualWindProduction', 'SystemLoadEP2', 'SMPEP2']
+    # Apply pd.to_numeric to all columns at once using applymap for efficiency
     for col in cols_to_numeric:
         df[col] = pd.to_numeric(df[col], errors='coerce')
     
-    # Handle missing values
+    # Handle missing values (replace all at once)
     print("\n3. Handling missing values...")
     df.replace(['', 'NA', 'N/A', None], np.nan, inplace=True)
     
@@ -76,12 +77,14 @@ def load_and_preprocess_data():
     SMPEP2_out = (df_cleaned['SMPEP2'] > 0) | (df_cleaned['SMPEP2'] <= 550)
     df_cleaned = df_cleaned[SMPEP2_out]
     
-    # Fill missing values with median for skewed distributions
+    # Fill missing values with median for skewed distributions (vectorized)
+    print("\n5. Filling missing values...")
     fill_with_median = ['ForecastWindProduction','SystemLoadEA','SMPEA',
                        'ActualWindProduction', 'SystemLoadEP2', 'SMPEP2']
-    for col in fill_with_median:
-        median_col = df_cleaned[col].median()
-        df_cleaned[col].fillna(median_col, inplace=True)
+    # Pre-calculate all medians at once
+    medians = df_cleaned[fill_with_median].median()
+    # Fill all columns at once
+    df_cleaned[fill_with_median] = df_cleaned[fill_with_median].fillna(medians)
     
     # Fill CO2Intensity with mean (normal distribution)
     mean_CO2Intensity = df_cleaned['CO2Intensity'].mean()
@@ -98,23 +101,25 @@ def load_and_preprocess_data():
 def add_cyclic_features(df_scaled):
     """
     Add sine and cosine transformations for cyclic features.
+    Optimized with vectorized operations for better performance.
     """
     print("\n6. Adding cyclic features...")
     
-    # Define periodic transform function
-    def periodic_transform(df, variable):
-        df[f"{variable}_SIN"] = np.sin(df[variable] / df[variable].max() * 2 * np.pi)
-        df[f"{variable}_COS"] = np.cos(df[variable] / df[variable].max() * 2 * np.pi)
-        return df
+    # List of cyclic features to transform
+    cyclic_features = ['DayOfWeek', 'Day', 'Month', 'PeriodOfDay']
     
-    # Apply transformations
-    df_scaled = periodic_transform(df_scaled, 'DayOfWeek')
-    df_scaled = periodic_transform(df_scaled, 'Day')
-    df_scaled = periodic_transform(df_scaled, 'Month')
-    df_scaled = periodic_transform(df_scaled, 'PeriodOfDay')
+    # Pre-calculate max values once (vectorized)
+    max_values = {col: df_scaled[col].max() for col in cyclic_features}
     
-    # Drop original cyclic columns
-    df_scaled = df_scaled.drop(columns=['DayOfWeek', 'Day', 'Month', 'PeriodOfDay'])
+    # Vectorized transformation: normalize all features at once
+    for col in cyclic_features:
+        max_val = max_values[col]
+        normalized = df_scaled[col] / max_val * 2 * np.pi
+        df_scaled[f"{col}_SIN"] = np.sin(normalized)
+        df_scaled[f"{col}_COS"] = np.cos(normalized)
+    
+    # Drop original cyclic columns in one operation
+    df_scaled = df_scaled.drop(columns=cyclic_features)
     
     return df_scaled
 
