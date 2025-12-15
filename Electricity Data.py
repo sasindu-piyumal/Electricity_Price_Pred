@@ -22,7 +22,31 @@ warnings.filterwarnings('ignore')
 # In[2]:
 
 
-data = pd.read_csv("Z:\\Sasindu\\Data set\\electricity.csv", index_col=0, parse_dates=[0])
+try:
+    data = pd.read_csv("electricity.csv", index_col=0, parse_dates=[0])
+except FileNotFoundError:
+    print("Error: The file 'electricity.csv' was not found in the current directory.")
+    print("Please ensure the file exists in the same directory as this script.")
+    import sys
+    sys.exit(1)
+except PermissionError:
+    print("Error: Permission denied when trying to read 'electricity.csv'.")
+    print("Please check file permissions and try again.")
+    import sys
+    sys.exit(1)
+except pd.errors.EmptyDataError:
+    print("Error: The file 'electricity.csv' is empty.")
+    import sys
+    sys.exit(1)
+except pd.errors.ParserError as e:
+    print(f"Error: Unable to parse 'electricity.csv'. {str(e)}")
+    print("Please ensure the file is a valid CSV format.")
+    import sys
+    sys.exit(1)
+except Exception as e:
+    print(f"Error: An unexpected error occurred while reading 'electricity.csv': {str(e)}")
+    import sys
+    sys.exit(1)
 
 
 # In[3]:
