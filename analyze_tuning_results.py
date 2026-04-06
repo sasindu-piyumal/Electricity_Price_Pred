@@ -46,7 +46,7 @@ def load_and_analyze_results(filename='tuning_results.joblib'):
                 print(f"  {metric.upper():<10} {baseline_val:>12.4f} {optimized_val:>12.4f} {change:>11.1f}%")
             else:
                 change = ((baseline_val - optimized_val) / baseline_val) * 100
-                print(f"  {metric.upper():<10} {baseline_val:>12.4f} {optimized_val:>12.4f} {-change:>11.1f}%")
+                print(f"  {metric.upper():<10} {baseline_val:>12.4f} {optimized_val:>12.4f} {change:>11.1f}%")
         
         print(f"\nBest Hyperparameters:")
         best_params = results['grid_search']['best_params']
