@@ -153,4 +153,4 @@ python analyze_tuning_results.py
 - **Cyclic encoding** (sin/cos) correctly represents periodic time features, unlike ordinal encoding.
 - **TimeSeriesSplit** instead of random cross-validation prevents future data leaking into training folds.
 - **`random_state=42`** is fixed throughout for full reproducibility.
-- **Joblib** is used for model serialisation (more secure than `pickle` for scikit-learn objects).
+- **JSON** is used for saved tuning summaries so analysis never deserializes executable pickle/joblib payloads.

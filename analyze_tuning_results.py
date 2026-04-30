@@ -5,21 +5,24 @@
 Utility script to analyze saved hyperparameter tuning results.
 """
 
-import joblib
-import pandas as pd
-import numpy as np
+import json
 
-def load_and_analyze_results(filename='tuning_results.joblib'):
+
+def load_and_analyze_results(filename='tuning_results.json'):
     """
     Load and display analysis of hyperparameter tuning results.
+
+    The results file is JSON rather than pickle/joblib. Pickle-based formats can
+    execute arbitrary code during loading, so this utility only parses inert JSON
+    data produced by hyperparameter_tuning.py.
     """
     print("="*80)
     print("HYPERPARAMETER TUNING RESULTS ANALYSIS")
     print("="*80)
     
     try:
-        # Load results using joblib (secure alternative to pickle)
-        results = joblib.load(filename)
+        with open(filename, 'r', encoding='utf-8') as results_file:
+            results = json.load(results_file)
         
         # Extract key information
         baseline_r2 = results['baseline_model']['r2']
@@ -61,7 +64,7 @@ def load_and_analyze_results(filename='tuning_results.joblib'):
         
         print(f"\nTop 5 Important Features:")
         feature_importance = results['best_model']['feature_importance']
-        for idx, row in feature_importance.head(5).iterrows():
+        for row in feature_importance[:5]:
             print(f"  {row['feature']}: {row['importance']:.4f}")
         
         print(f"\nModel Configuration:")
@@ -75,6 +78,8 @@ def load_and_analyze_results(filename='tuning_results.joblib'):
         
     except FileNotFoundError:
         print(f"Error: {filename} not found. Please run hyperparameter_tuning.py first.")
+    except json.JSONDecodeError as e:
+        print(f"Error: {filename} is not valid JSON: {str(e)}")
     except Exception as e:
         print(f"Error loading results: {str(e)}")
     

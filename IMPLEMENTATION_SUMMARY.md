@@ -49,7 +49,7 @@
 
 - [x] **Track computation time**: Detailed timing for each phase
 
-- [x] **Save detailed results**: Complete results saved to `tuning_results.pkl`
+- [x] **Save detailed results**: Safe result summary saved to `tuning_results.json`
 
 ## Success Criteria Addressed
 
@@ -61,9 +61,8 @@
 
 ## Output Files (Generated When Run)
 
-1. **tuning_results.pkl**: Complete results including:
-   - Baseline and optimized models
-   - All search results and parameters
+1. **tuning_results.json**: Safe result summary including:
+   - Best search parameters
    - Performance metrics
    - Feature importance
    - Timing information
