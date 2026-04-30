@@ -103,6 +103,75 @@ class TestOutlierRemoval(unittest.TestCase):
         
         self.assertEqual(remaining, expected,
                         "Edge cases should be handled correctly")
+    
+    def test_dataframe_structure_preservation(self):
+        """Test that non-SMPEP2 columns are preserved during filtering."""
+        df_test = pd.DataFrame({
+            'SMPEP2': [1, 50, 100, 600, 700],
+            'temperature': [10.5, 11.2, 12.0, 13.5, 14.0],
+            'wind_speed': [5, 6, 7, 8, 9]
+        })
+        
+        # Apply fixed logic
+        SMPEP2_out = (df_test['SMPEP2'] > 0) & (df_test['SMPEP2'] <= 550)
+        df_filtered = df_test[SMPEP2_out]
+        
+        # Verify all expected columns are present
+        expected_columns = ['SMPEP2', 'temperature', 'wind_speed']
+        self.assertEqual(list(df_filtered.columns), expected_columns,
+                        "All columns should be preserved after filtering")
+        
+        # Verify the other column values are correctly aligned with filtered rows
+        expected_temps = [10.5, 11.2, 12.0]
+        actual_temps = df_filtered['temperature'].tolist()
+        self.assertEqual(actual_temps, expected_temps,
+                        "Other column values should be correctly aligned with filtered rows")
+        
+        # Verify DataFrame shape (should have 3 rows after filtering out 600 and 700)
+        self.assertEqual(df_filtered.shape[0], 3,
+                        "Filtered DataFrame should have 3 rows")
+    
+    def test_nan_handling(self):
+        """Test handling of NaN values in the SMPEP2 column."""
+        nan_data = pd.DataFrame({
+            'SMPEP2': [1, 50, np.nan, 100, 200, np.nan, 600],
+            'value': ['a', 'b', 'c', 'd', 'e', 'f', 'g']
+        })
+        
+        # Apply fixed logic
+        SMPEP2_out = (nan_data['SMPEP2'] > 0) & (nan_data['SMPEP2'] <= 550)
+        df_filtered = nan_data[SMPEP2_out]
+        
+        # NaN comparisons evaluate to False, so NaN rows should be filtered out
+        remaining_smpep2 = df_filtered['SMPEP2'].tolist()
+        
+        # Should keep only [1, 50, 100, 200]
+        expected_values = [1.0, 50.0, 100.0, 200.0]
+        self.assertEqual(remaining_smpep2, expected_values,
+                        "NaN values should be filtered out by the comparison logic")
+        
+        # Verify no NaN values remain
+        self.assertFalse(df_filtered['SMPEP2'].isna().any(),
+                        "No NaN values should remain after filtering")
+    
+    def test_empty_result_after_filtering(self):
+        """Test filtering that results in an empty DataFrame."""
+        all_outliers = pd.DataFrame({
+            'SMPEP2': [-100, -50, 600, 700, 1000],
+            'other_col': range(5)
+        })
+        
+        # Apply fixed logic - all values are outliers
+        SMPEP2_out = (all_outliers['SMPEP2'] > 0) & (all_outliers['SMPEP2'] <= 550)
+        df_filtered = all_outliers[SMPEP2_out]
+        
+        # Should result in empty DataFrame
+        self.assertEqual(df_filtered.shape[0], 0,
+                        "Filtering all outliers should result in empty DataFrame")
+        
+        # Columns should still be present
+        self.assertEqual(list(df_filtered.columns), ['SMPEP2', 'other_col'],
+                        "Columns should be preserved even in empty DataFrame")
 
 if __name__ == '__main__':
     # Run the tests
