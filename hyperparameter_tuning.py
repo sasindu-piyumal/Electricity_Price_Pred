@@ -11,9 +11,9 @@ the Random Forest model performance beyond the baseline R² of 0.6502.
 
 import pandas as pd
 import numpy as np
+import json
 import warnings
 import time
-import joblib
 from datetime import datetime
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -428,13 +428,43 @@ def analyze_hyperparameter_impact(search_results):
     
     return param_impacts, results_df
 
-def save_results(results_dict, filename='tuning_results.joblib'):
+def make_json_serializable(value):
     """
-    Save all tuning results using joblib (secure alternative to pickle).
+    Convert numpy/pandas objects into safe JSON-compatible values.
+
+    JSON is used for result summaries because pickle-based formats, including
+    joblib, can execute arbitrary code when loading untrusted files.
+    """
+    if isinstance(value, dict):
+        return {str(key): make_json_serializable(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [make_json_serializable(item) for item in value]
+    if isinstance(value, pd.DataFrame):
+        return value.to_dict(orient='records')
+    if isinstance(value, pd.Series):
+        return value.tolist()
+    if isinstance(value, np.ndarray):
+        return value.tolist()
+    if isinstance(value, (np.integer,)):
+        return int(value)
+    if isinstance(value, (np.floating,)):
+        return float(value)
+    if isinstance(value, (np.bool_,)):
+        return bool(value)
+    if value is None or isinstance(value, (str, int, float, bool)):
+        return value
+    return str(value)
+
+
+def save_results(results_dict, filename='tuning_results.json'):
+    """
+    Save tuning result summaries as JSON.
     """
     print(f"\n17. Saving results to {filename}...")
     
-    joblib.dump(results_dict, filename)
+    safe_results = make_json_serializable(results_dict)
+    with open(filename, 'w', encoding='utf-8') as results_file:
+        json.dump(safe_results, results_file, indent=2)
     
     print(f"    Results saved successfully!")
 
@@ -571,19 +601,16 @@ def main():
         # Prepare results dictionary
         results = {
             'baseline_model': {
-                'model': baseline_rf,
                 'metrics': baseline_results,
                 'r2': baseline_r2
             },
             'random_search': {
-                'search_object': random_search,
                 'best_params': random_search.best_params_,
                 'best_score_cv': random_search.best_score_,
                 'time_minutes': random_time,
                 'param_impacts': param_impacts_random
             },
             'grid_search': {
-                'search_object': grid_search,
                 'best_params': grid_search.best_params_,
                 'best_score_cv': grid_search.best_score_,
                 'time_minutes': grid_time,
@@ -591,7 +618,6 @@ def main():
                 'refined_grid': refined_grid
             },
             'best_model': {
-                'model': best_model,
                 'metrics': final_results,
                 'r2': final_r2,
                 'feature_importance': feature_importance_df
@@ -631,7 +657,7 @@ def main():
                 print(f"  - {param}: {value}")
         
         print("\nFiles saved:")
-        print("  - tuning_results.joblib (complete results)")
+        print("  - tuning_results.json (safe result summary)")
         print("  - feature_importance.png")
         print("  - model_comparison.png")
         
