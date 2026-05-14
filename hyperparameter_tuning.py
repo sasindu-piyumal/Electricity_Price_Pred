@@ -122,6 +122,8 @@ def add_cyclic_features(df_scaled):
 def prepare_training_data(df_new):
     """
     Prepare data for model training with proper train-test split and scaling.
+    Returns feature_names extracted from X after all transformations (cyclic encoding, DateTime removal)
+    but before scaling, ensuring perfect alignment with scaled X_train and X_test.
     """
     print("\n7. Preparing training data...")
     
@@ -138,6 +140,12 @@ def prepare_training_data(df_new):
     X = df_scaled.drop(columns='SMPEP2', axis=1)
     y = df_scaled['SMPEP2']
     
+    # CRITICAL: Capture feature_names from X BEFORE scaling to ensure alignment
+    # At this point X has already been transformed with cyclic features (SIN/COS)
+    # and original cyclic columns have been removed, so X.columns exactly matches
+    # what will be in X_train_scaled and X_test_scaled after scaling
+    feature_names = X.columns.tolist()
+    
     # Train-test split
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=RANDOM_STATE, shuffle=False
@@ -151,8 +159,9 @@ def prepare_training_data(df_new):
     
     print(f"   - Training set shape: {X_train_scaled.shape}")
     print(f"   - Test set shape: {X_test_scaled.shape}")
+    print(f"   - Feature count: {len(feature_names)}")
     
-    return X_train_scaled, X_test_scaled, y_train, y_test, scaler
+    return X_train_scaled, X_test_scaled, y_train, y_test, scaler, feature_names
 
 # Cross-validation and Parameter Search Space
 def setup_cross_validation(n_splits=5):
@@ -497,20 +506,8 @@ def main():
         # Load and preprocess data
         df = load_and_preprocess_data()
         
-        # Prepare training data
-        X_train, X_test, y_train, y_test, scaler = prepare_training_data(df)
-        
-        # Get feature names
-        feature_names = df.drop(columns=['SMPEP2']).columns.tolist()
-        if 'DateTime' in feature_names:
-            feature_names.remove('DateTime')
-        # Add cyclic feature names
-        for col in ['DayOfWeek', 'Day', 'Month', 'PeriodOfDay']:
-            feature_names.extend([f"{col}_SIN", f"{col}_COS"])
-        # Remove original cyclic columns
-        for col in ['DayOfWeek', 'Day', 'Month', 'PeriodOfDay']:
-            if col in feature_names:
-                feature_names.remove(col)
+        # Prepare training data (now returns feature_names aligned with X_train/X_test)
+        X_train, X_test, y_train, y_test, scaler, feature_names = prepare_training_data(df)
         
         # Setup cross-validation
         cv = setup_cross_validation(n_splits=5)
