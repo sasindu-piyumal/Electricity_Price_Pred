@@ -34,6 +34,8 @@ warnings.filterwarnings('ignore')
 
 # Set random seed for reproducibility
 RANDOM_STATE = 42
+# Keep the second-stage GridSearchCV bounded so it cannot dominate runtime.
+MAX_REFINED_GRID_COMBINATIONS = 108
 np.random.seed(RANDOM_STATE)
 
 print("=" * 80)
