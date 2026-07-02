@@ -230,60 +230,70 @@ def perform_randomized_search(X_train, y_train, param_space, cv, n_iter=100):
 
 def create_refined_param_grid(best_params):
     """
-    Create a refined parameter grid for GridSearchCV based on RandomizedSearchCV results.
+    Create a compact refined parameter grid around RandomizedSearchCV results.
+
+    The original second-stage grid could expand to hundreds of candidates and
+    dominate runtime. This keeps local refinement for every tuned parameter but
+    caps the Cartesian product to a predictable size (typically <= 108 configs).
     """
-    print("\n12. Creating refined parameter grid for GridSearchCV...")
+    print("\n12. Creating compact refined parameter grid for GridSearchCV...")
+    
+    def unique_sorted(values):
+        """Return sorted unique values while preserving None at the end."""
+        non_none = sorted({value for value in values if value is not None})
+        return non_none + ([None] if any(value is None for value in values) else [])
     
     refined_grid = {}
     
-    # For n_estimators: search around the best value
+    # n_estimators is the most expensive dimension; compare the winner with one
+    # nearby cheaper option rather than expanding to multiple larger forests.
     best_n_estimators = best_params['n_estimators']
-    refined_grid['n_estimators'] = sorted(list(set([
+    refined_grid['n_estimators'] = unique_sorted([
         max(50, best_n_estimators - 100),
-        best_n_estimators,
-        best_n_estimators + 100,
-        best_n_estimators + 200
-    ])))
+        best_n_estimators
+    ])
     
-    # For max_depth: search around the best value
+    # Refine depth locally. If the random search selected unlimited depth, test
+    # it only against one strong bounded alternative to avoid very deep trees
+    # across a large grid.
     if best_params['max_depth'] is not None:
         best_max_depth = best_params['max_depth']
-        refined_grid['max_depth'] = sorted(list(set([
-            max(5, best_max_depth - 10),
-            best_max_depth - 5,
+        refined_grid['max_depth'] = unique_sorted([
+            max(5, best_max_depth - 5),
             best_max_depth,
-            best_max_depth + 5,
-            best_max_depth + 10
-        ])))
+            best_max_depth + 5
+        ])
     else:
-        refined_grid['max_depth'] = [30, 40, 50, None]
+        refined_grid['max_depth'] = [50, None]
     
-    # For min_samples_split: search around the best value
+    # Keep a small local neighbourhood for split/leaf regularisation.
     best_min_samples_split = best_params['min_samples_split']
-    refined_grid['min_samples_split'] = sorted(list(set([
+    refined_grid['min_samples_split'] = unique_sorted([
         max(2, best_min_samples_split - 5),
         best_min_samples_split,
         best_min_samples_split + 5
-    ])))
+    ])
     
-    # For min_samples_leaf: search around the best value
     best_min_samples_leaf = best_params['min_samples_leaf']
-    refined_grid['min_samples_leaf'] = sorted(list(set([
+    refined_grid['min_samples_leaf'] = unique_sorted([
         max(1, best_min_samples_leaf - 2),
         best_min_samples_leaf,
         best_min_samples_leaf + 2
-    ])))
+    ])
     
-    # For max_features: keep the best and add nearby options
+    # max_features affects both quality and split cost. Keep the random-search
+    # winner and one adjacent alternative instead of four broad options.
     best_max_features = best_params['max_features']
     if isinstance(best_max_features, str):
-        refined_grid['max_features'] = ['sqrt', 'log2', 0.3, 0.5]
-    else:
-        refined_grid['max_features'] = sorted(list(set([
-            max(0.1, best_max_features - 0.1),
+        refined_grid['max_features'] = unique_sorted([
             best_max_features,
-            min(1.0, best_max_features + 0.1)
-        ])))
+            'sqrt' if best_max_features == 'log2' else 'log2'
+        ])
+    else:
+        refined_grid['max_features'] = unique_sorted([
+            best_max_features,
+            max(0.1, best_max_features - 0.1)
+        ])
     
     # Keep fixed parameters
     refined_grid['bootstrap'] = [True]
