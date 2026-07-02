@@ -104,8 +104,14 @@ def add_cyclic_features(df_scaled):
     
     # Define periodic transform function
     def periodic_transform(df, variable):
-        df[f"{variable}_SIN"] = np.sin(df[variable] / df[variable].max() * 2 * np.pi)
-        df[f"{variable}_COS"] = np.cos(df[variable] / df[variable].max() * 2 * np.pi)
+        max_val = df[variable].max()
+        # Avoid 0/0 when a cyclic feature is present but all values are zero.
+        if max_val == 0:
+            df[f"{variable}_SIN"] = 0
+            df[f"{variable}_COS"] = 1
+        else:
+            df[f"{variable}_SIN"] = np.sin(df[variable] / max_val * 2 * np.pi)
+            df[f"{variable}_COS"] = np.cos(df[variable] / max_val * 2 * np.pi)
         return df
     
     # Apply transformations
