@@ -308,7 +308,18 @@ def create_refined_param_grid(best_params):
         if param not in ['bootstrap', 'random_state']:
             refined_combinations *= len(values)
     
-    print(f"    Refined grid combinations: {refined_combinations}")
+    if refined_combinations > MAX_REFINED_GRID_COMBINATIONS:
+        raise ValueError(
+            "Refined grid has "
+            f"{refined_combinations} combinations, exceeding the configured "
+            f"budget of {MAX_REFINED_GRID_COMBINATIONS}. Tighten the local "
+            "parameter neighbourhood before running GridSearchCV."
+        )
+    
+    print(
+        f"    Refined grid combinations: {refined_combinations} "
+        f"(budget: {MAX_REFINED_GRID_COMBINATIONS})"
+    )
     print(f"    Refined parameters: {refined_grid}")
     
     return refined_grid
