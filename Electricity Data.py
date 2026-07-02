@@ -393,7 +393,7 @@ dt = DecisionTreeRegressor()
 model_acc(dt)
 
 from sklearn.ensemble import RandomForestRegressor
-rf = RandomForestRegressor()
+rf = RandomForestRegressor(n_jobs=-1)
 model_acc(rf)
 
 from sklearn.svm import SVR
@@ -511,7 +511,7 @@ dt = DecisionTreeRegressor()
 model_acc_pca(dt)
 
 from sklearn.ensemble import RandomForestRegressor
-rf = RandomForestRegressor()
+rf = RandomForestRegressor(n_jobs=-1)
 model_acc_pca(rf)
 
 from sklearn.svm import SVR
@@ -611,7 +611,7 @@ dt = DecisionTreeRegressor()
 model_acc_no_scale(dt)
 
 from sklearn.ensemble import RandomForestRegressor
-rf = RandomForestRegressor()
+rf = RandomForestRegressor(n_jobs=-1)
 model_acc_no_scale(rf)
 
 from sklearn.svm import SVR
