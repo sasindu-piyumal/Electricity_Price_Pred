@@ -51,7 +51,8 @@ def load_and_preprocess_data():
     print("\n1. Loading Data...")
     
     # Load data
-    data = pd.read_csv("electricity.csv", index_col=0, parse_dates=[0])
+    data = pd.read_csv("electricity.csv", index_col=0)
+    data.index = pd.to_datetime(data.index, format="%d/%m/%Y %H:%M")
     df = pd.DataFrame(data)
     
     print(f"   - Dataset shape: {df.shape}")
@@ -204,8 +205,8 @@ def perform_randomized_search(X_train, y_train, param_space, cv, n_iter=100):
     print(f"\n11. Performing RandomizedSearchCV with {n_iter} iterations...")
     print("    This may take some time...")
     
-    # Create base model
-    rf_base = RandomForestRegressor(n_jobs=-1)
+    # Create base model (n_jobs=1 to avoid nested threading CPU thrashing)
+    rf_base = RandomForestRegressor(n_jobs=1)
     
     # Setup RandomizedSearchCV
     random_search = RandomizedSearchCV(
@@ -313,8 +314,8 @@ def perform_grid_search(X_train, y_train, refined_grid, cv):
     print(f"\n13. Performing GridSearchCV for fine-tuning...")
     print("    This may take some time...")
     
-    # Create base model
-    rf_base = RandomForestRegressor(n_jobs=-1)
+    # Create base model (n_jobs=1 to avoid nested threading CPU thrashing)
+    rf_base = RandomForestRegressor(n_jobs=1)
     
     # Setup GridSearchCV
     grid_search = GridSearchCV(

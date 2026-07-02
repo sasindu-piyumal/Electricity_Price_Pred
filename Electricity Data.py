@@ -22,7 +22,8 @@ warnings.filterwarnings('ignore')
 # In[2]:
 
 
-data = pd.read_csv("electricity.csv", index_col=0, parse_dates=[0])
+data = pd.read_csv("electricity.csv", index_col=0)
+data.index = pd.to_datetime(data.index, format="%d/%m/%Y %H:%M")
 
 
 # In[3]:
