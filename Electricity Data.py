@@ -57,8 +57,7 @@ df.info()
 
 
 cols_to_numeric = ['ForecastWindProduction', 'SystemLoadEA', 'SMPEA', 'ORKTemperature', 'ORKWindspeed', 'CO2Intensity', 'ActualWindProduction', 'SystemLoadEP2', 'SMPEP2']
-for col in cols_to_numeric:
-    df[col] = pd.to_numeric(df[col], errors='coerce')
+df[cols_to_numeric] = df[cols_to_numeric].apply(pd.to_numeric, errors='coerce')
 df.info()
 
 
@@ -103,7 +102,7 @@ for col in numeric_vals:
 # In[11]:
 
 
-df.replace(['', 'NA', 'N/A', None], np.nan, inplace=True)
+
 
 
 # In[12]:
@@ -145,9 +144,7 @@ df_cleaned.shape
 
 
 fill_with_median = ['ForecastWindProduction', 'SystemLoadEA', 'SMPEA', 'ActualWindProduction', 'SystemLoadEP2', 'SMPEP2']
-for col in fill_with_median:
-    median_col = df_cleaned[col].median()
-    df_cleaned[col].fillna(median_col, inplace=True)
+df_cleaned[fill_with_median] = df_cleaned[fill_with_median].fillna(df_cleaned[fill_with_median].median())
 
 
 # ##### Because of having skewed distributions in 'ForecastWindProduction', 'SystemLoadEA', 'SMPEA', 'ActualWindProduction', 'SystemLoadEP2', 'SMPEP2' columns, missing values were filled with median.
@@ -156,7 +153,7 @@ for col in fill_with_median:
 
 
 mean_CO2Intensity = df_cleaned['CO2Intensity'].mean()
-df_cleaned['CO2Intensity'].fillna(mean_CO2Intensity, inplace=True)
+df_cleaned['CO2Intensity'] = df_cleaned['CO2Intensity'].fillna(mean_CO2Intensity)
 
 
 # ##### CO2Intensity has a normal distribution. Therefore, null values were filled with the mean value of CO2Intensity.
@@ -285,8 +282,9 @@ def periodic_transform(df, variable):
         df[f"{variable}_SIN"] = 0
         df[f"{variable}_COS"] = 1
     else:
-        df[f"{variable}_SIN"] = np.sin(df[variable] / max_val * 2 * np.pi)
-        df[f"{variable}_COS"] = np.cos(df[variable] / max_val * 2 * np.pi)
+        angle = df[variable] / max_val * 2 * np.pi
+        df[f"{variable}_SIN"] = np.sin(angle)
+        df[f"{variable}_COS"] = np.cos(angle)
     
     return df
 
@@ -392,7 +390,7 @@ dt = DecisionTreeRegressor()
 model_acc(dt)
 
 from sklearn.ensemble import RandomForestRegressor
-rf = RandomForestRegressor()
+rf = RandomForestRegressor(n_jobs=-1)
 model_acc(rf)
 
 from sklearn.svm import SVR
@@ -430,7 +428,7 @@ y_test_pred = y_test_pred.flatten()
 # In[ ]:
 
 
-final_df = pd.DataFrame(np.hstack((y_test_pred[:, np.newaxis], y_test[:, np.newaxis])), columns=['Prediction', 'Real'])
+final_df = pd.DataFrame({'Prediction': y_test_pred, 'Real': y_test.to_numpy(copy=False)})
 
 
 # In[ ]:
@@ -510,7 +508,7 @@ dt = DecisionTreeRegressor()
 model_acc_pca(dt)
 
 from sklearn.ensemble import RandomForestRegressor
-rf = RandomForestRegressor()
+rf = RandomForestRegressor(n_jobs=-1)
 model_acc_pca(rf)
 
 from sklearn.svm import SVR
@@ -523,7 +521,7 @@ model_acc_pca(svm)
 
 y_test_pred = rf.predict(x_test_pca)
 y_test_pred = y_test_pred.flatten()
-final_df_pca = pd.DataFrame(np.hstack((y_test_pred[:, np.newaxis], y_test[:, np.newaxis])), columns=['Prediction', 'Real'])
+final_df_pca = pd.DataFrame({'Prediction': y_test_pred, 'Real': y_test.to_numpy(copy=False)})
 
 
 # In[ ]:
@@ -610,7 +608,7 @@ dt = DecisionTreeRegressor()
 model_acc_no_scale(dt)
 
 from sklearn.ensemble import RandomForestRegressor
-rf = RandomForestRegressor()
+rf = RandomForestRegressor(n_jobs=-1)
 model_acc_no_scale(rf)
 
 from sklearn.svm import SVR
@@ -623,7 +621,7 @@ model_acc_no_scale(svm)
 
 y_test_pred = rf.predict(X_test)
 y_test_pred = y_test_pred.flatten()
-final_dfr = pd.DataFrame(np.hstack((y_test_pred[:, np.newaxis], y_test[:, np.newaxis])), columns=['Prediction', 'Real'])
+final_dfr = pd.DataFrame({'Prediction': y_test_pred, 'Real': y_test.to_numpy(copy=False)})
 
 
 # In[ ]:
