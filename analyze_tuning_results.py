@@ -21,9 +21,16 @@ def load_and_analyze_results(filename='tuning_results.joblib'):
         # Load results using joblib (secure alternative to pickle)
         results = joblib.load(filename)
         
+        # Cache repeated dictionary lookups
+        baseline_model = results['baseline_model']
+        best_model = results['best_model']
+        metadata = results['metadata']
+        grid_search = results['grid_search']
+        random_search = results['random_search']
+        
         # Extract key information
-        baseline_r2 = results['baseline_model']['r2']
-        final_r2 = results['best_model']['r2']
+        baseline_r2 = baseline_model['r2']
+        final_r2 = best_model['r2']
         improvement = ((final_r2 - baseline_r2) / baseline_r2) * 100
         
         print(f"\nPerformance Summary:")
@@ -35,8 +42,8 @@ def load_and_analyze_results(filename='tuning_results.joblib'):
         print(f"  {'Metric':<10} {'Baseline':>12} {'Optimized':>12} {'Change':>12}")
         print(f"  {'-'*48}")
         
-        baseline_metrics = results['baseline_model']['metrics']
-        optimized_metrics = results['best_model']['metrics']
+        baseline_metrics = baseline_model['metrics']
+        optimized_metrics = best_model['metrics']
         
         for metric in ['r2', 'mae', 'mse', 'rmse']:
             baseline_val = baseline_metrics[metric]
@@ -49,29 +56,29 @@ def load_and_analyze_results(filename='tuning_results.joblib'):
                 print(f"  {metric.upper():<10} {baseline_val:>12.4f} {optimized_val:>12.4f} {-change:>11.1f}%")
         
         print(f"\nBest Hyperparameters:")
-        best_params = results['grid_search']['best_params']
+        best_params = grid_search['best_params']
         for param, value in best_params.items():
             if param not in ['random_state', 'bootstrap']:
                 print(f"  {param}: {value}")
         
         print(f"\nTiming Information:")
-        print(f"  Total time: {results['metadata']['total_time_minutes']:.2f} minutes")
-        print(f"  RandomizedSearchCV: {results['random_search']['time_minutes']:.2f} minutes")
-        print(f"  GridSearchCV: {results['grid_search']['time_minutes']:.2f} minutes")
+        print(f"  Total time: {metadata['total_time_minutes']:.2f} minutes")
+        print(f"  RandomizedSearchCV: {random_search['time_minutes']:.2f} minutes")
+        print(f"  GridSearchCV: {grid_search['time_minutes']:.2f} minutes")
         
         print(f"\nTop 5 Important Features:")
-        feature_importance = results['best_model']['feature_importance']
-        for idx, row in feature_importance.head(5).iterrows():
-            print(f"  {row['feature']}: {row['importance']:.4f}")
+        feature_importance = best_model['feature_importance']
+        for row in feature_importance.head(5).itertuples(index=False):
+            print(f"  {row.feature}: {row.importance:.4f}")
         
         print(f"\nModel Configuration:")
-        print(f"  Training samples: {results['metadata']['train_shape'][0]}")
-        print(f"  Test samples: {results['metadata']['test_shape'][0]}")
-        print(f"  Features: {results['metadata']['train_shape'][1]}")
-        print(f"  CV Splits: {results['metadata']['cv_splits']}")
-        print(f"  Random State: {results['metadata']['random_state']}")
+        print(f"  Training samples: {metadata['train_shape'][0]}")
+        print(f"  Test samples: {metadata['test_shape'][0]}")
+        print(f"  Features: {metadata['train_shape'][1]}")
+        print(f"  CV Splits: {metadata['cv_splits']}")
+        print(f"  Random State: {metadata['random_state']}")
         
-        print(f"\nAnalysis completed at: {results['metadata']['timestamp']}")
+        print(f"\nAnalysis completed at: {metadata['timestamp']}")
         
     except FileNotFoundError:
         print(f"Error: {filename} not found. Please run hyperparameter_tuning.py first.")
