@@ -51,7 +51,12 @@ def load_and_preprocess_data():
     print("\n1. Loading Data...")
     
     # Load data
-    data = pd.read_csv("electricity.csv", index_col=0)
+    data = pd.read_csv(
+        "electricity.csv",
+        index_col=0,
+        na_values=["?", "", "NA", "N/A"],
+        low_memory=False,
+    )
     data.index = pd.to_datetime(data.index, format="%d/%m/%Y %H:%M")
     df = pd.DataFrame(data)
     
