@@ -20,8 +20,8 @@ def load_and_analyze_results(filename='tuning_results.json'):
     print("="*80)
     
     try:
-        # Load results using joblib (secure alternative to pickle)
-        results = joblib.load(filename)
+        with Path(filename).open(encoding='utf-8') as results_file:
+            results = json.load(results_file)
         
         # Cache repeated dictionary lookups
         baseline_model = results['baseline_model']
