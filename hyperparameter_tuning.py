@@ -9,11 +9,12 @@ This script implements comprehensive hyperparameter tuning to improve
 the Random Forest model performance beyond the baseline R² of 0.6502.
 """
 
+import json
+
 import pandas as pd
 import numpy as np
 import warnings
 import time
-import joblib
 from datetime import datetime
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -450,14 +451,15 @@ def analyze_hyperparameter_impact(search_results):
     
     return param_impacts, results_df
 
-def save_results(results_dict, filename='tuning_results.joblib'):
+def save_results(results_dict, filename='tuning_results.json'):
     """
-    Save all tuning results using joblib (secure alternative to pickle).
+    Save the result summary as JSON.
     """
     print(f"\n17. Saving results to {filename}...")
-    
-    joblib.dump(results_dict, filename)
-    
+
+    with open(filename, 'w', encoding='utf-8') as results_file:
+        json.dump(results_dict, results_file, indent=2)
+
     print(f"    Results saved successfully!")
 
 def create_comparison_plot(baseline_r2, final_r2, y_test, y_pred):
