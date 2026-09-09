@@ -84,6 +84,8 @@ def load_and_analyze_results(filename='tuning_results.json'):
         
     except FileNotFoundError:
         print(f"Error: {filename} not found. Please run hyperparameter_tuning.py first.")
+    except (json.JSONDecodeError, UnicodeDecodeError) as e:
+        print(f"Error: {filename} is not a valid result summary: {e}")
     except Exception as e:
         print(f"Error loading results: {str(e)}")
     
