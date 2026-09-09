@@ -5,12 +5,13 @@
 Utility script to analyze saved hyperparameter tuning results.
 """
 
-import joblib
+import json
+from pathlib import Path
+
 import pandas as pd
-import numpy as np
 
 
-def load_and_analyze_results(filename='tuning_results.joblib'):
+def load_and_analyze_results(filename='tuning_results.json'):
     """
     Load and display analysis of hyperparameter tuning results.
     """
