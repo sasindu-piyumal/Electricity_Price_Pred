@@ -70,8 +70,8 @@ def load_and_analyze_results(filename='tuning_results.json'):
         
         print(f"\nTop 5 Important Features:")
         feature_importance = best_model['feature_importance']
-        for row in feature_importance.head(5).itertuples(index=False):
-            print(f"  {row.feature}: {row.importance:.4f}")
+        for row in feature_importance[:5]:
+            print(f"  {row['feature']}: {row['importance']:.4f}")
         
         print(f"\nModel Configuration:")
         print(f"  Training samples: {metadata['train_shape'][0]}")
