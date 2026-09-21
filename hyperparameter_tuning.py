@@ -349,33 +349,30 @@ def perform_grid_search(X_train, y_train, refined_grid, cv, n_iter=24):
     return grid_search, elapsed_time
 
 # Performance Evaluation and Analysis
-def evaluate_model(model, X_test, y_test, model_name="Model"):
-    """
-    Evaluate model performance with multiple metrics.
-    """
+def evaluate_model(model, X_test, y_test, model_name="Model", return_predictions=False):
+    """Evaluate a model and retain predictions only when a caller needs them."""
     print(f"\n14. Evaluating {model_name}...")
-    
-    # Make predictions
+
     y_pred = model.predict(X_test)
-    
-    # Calculate metrics
     r2 = r2_score(y_test, y_pred)
     mae = mean_absolute_error(y_test, y_pred)
     mse = mean_squared_error(y_test, y_pred)
     rmse = np.sqrt(mse)
-    
+
     print(f"    R² Score: {r2:.4f}")
     print(f"    MAE: {mae:.4f}")
     print(f"    MSE: {mse:.4f}")
     print(f"    RMSE: {rmse:.4f}")
-    
-    return {
+
+    metrics = {
         'r2': r2,
         'mae': mae,
         'mse': mse,
         'rmse': rmse,
-        'predictions': y_pred
     }
+    if return_predictions:
+        metrics['predictions'] = y_pred
+    return metrics
 
 def analyze_feature_importance(best_model, feature_names):
     """
