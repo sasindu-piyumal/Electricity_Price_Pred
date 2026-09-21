@@ -25,7 +25,6 @@ from sklearn.model_selection import (
     GridSearchCV,
     TimeSeriesSplit
 )
-from sklearn.preprocessing import MinMaxScaler
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
@@ -155,16 +154,13 @@ def prepare_training_data(df_new):
         X, y, test_size=0.2, random_state=RANDOM_STATE, shuffle=False
     )
     
-    # Scale features
-    print("\n8. Scaling features...")
-    scaler = MinMaxScaler()
-    X_train_scaled = scaler.fit_transform(X_train)
-    X_test_scaled = scaler.transform(X_test)
-    
-    print(f"   - Training set shape: {X_train_scaled.shape}")
-    print(f"   - Test set shape: {X_test_scaled.shape}")
-    
-    return X_train_scaled, X_test_scaled, y_train, y_test, scaler
+    # Tree-based models use order-preserving splits, so MinMax scaling would
+    # only allocate transformed copies without changing this model's behavior.
+    print("\n8. Using unscaled features for Random Forest...")
+    print(f"   - Training set shape: {X_train.shape}")
+    print(f"   - Test set shape: {X_test.shape}")
+
+    return X_train, X_test, y_train, y_test
 
 # Cross-validation and Parameter Search Space
 def setup_cross_validation(n_splits=5):
@@ -520,7 +516,7 @@ def main():
         df = load_and_preprocess_data()
         
         # Prepare training data
-        X_train, X_test, y_train, y_test, scaler = prepare_training_data(df)
+        X_train, X_test, y_train, y_test = prepare_training_data(df)
         
         # Get feature names
         feature_names = df.drop(columns=['SMPEP2']).columns.tolist()
