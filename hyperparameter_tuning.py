@@ -561,7 +561,9 @@ def main():
         print("FINAL MODEL EVALUATION")
         print("="*80)
         best_model = grid_search.best_estimator_
-        final_results = evaluate_model(best_model, X_test, y_test, "Optimized Random Forest")
+        final_results = evaluate_model(
+            best_model, X_test, y_test, "Optimized Random Forest", return_predictions=True
+        )
         final_r2 = final_results['r2']
         
         # Feature importance analysis
