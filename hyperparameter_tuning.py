@@ -80,16 +80,17 @@ def load_and_preprocess_data():
     SMPEP2_out = (df_cleaned['SMPEP2'] > 0) & (df_cleaned['SMPEP2'] <= 550)
     df_cleaned = df_cleaned[SMPEP2_out]
     
-    # Fill missing values with median for skewed distributions
-    fill_with_median = ['ForecastWindProduction','SystemLoadEA','SMPEA',
-                       'ActualWindProduction', 'SystemLoadEP2', 'SMPEP2']
-    for col in fill_with_median:
-        median_col = df_cleaned[col].median()
-        df_cleaned[col].fillna(median_col, inplace=True)
-    
+    # Fill the skewed numerical block from one median reduction and assignment.
+    fill_with_median = ['ForecastWindProduction', 'SystemLoadEA', 'SMPEA',
+                        'ActualWindProduction', 'SystemLoadEP2', 'SMPEP2']
+    df_cleaned[fill_with_median] = df_cleaned[fill_with_median].fillna(
+        df_cleaned[fill_with_median].median()
+    )
+
     # Fill CO2Intensity with mean (normal distribution)
-    mean_CO2Intensity = df_cleaned['CO2Intensity'].mean()
-    df_cleaned['CO2Intensity'].fillna(mean_CO2Intensity, inplace=True)
+    df_cleaned['CO2Intensity'] = df_cleaned['CO2Intensity'].fillna(
+        df_cleaned['CO2Intensity'].mean()
+    )
     
     # Drop highly correlated features
     print("\n5. Dropping highly correlated features...")
