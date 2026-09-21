@@ -57,21 +57,19 @@ def load_and_preprocess_data():
         low_memory=False,
     )
     data.index = pd.to_datetime(data.index, format="%d/%m/%Y %H:%M")
-    df = pd.DataFrame(data)
-    
+    df = data
+
     print(f"   - Dataset shape: {df.shape}")
-    
-    # Convert columns to numeric
+
+    # Convert the mixed-type numerical block in one vectorized assignment.
     print("\n2. Converting columns to numeric...")
-    cols_to_numeric = ['ForecastWindProduction', 'SystemLoadEA', 'SMPEA', 
-                      'ORKTemperature', 'ORKWindspeed', 'CO2Intensity', 
-                      'ActualWindProduction', 'SystemLoadEP2', 'SMPEP2']
-    for col in cols_to_numeric:
-        df[col] = pd.to_numeric(df[col], errors='coerce')
-    
-    # Handle missing values
+    cols_to_numeric = ['ForecastWindProduction', 'SystemLoadEA', 'SMPEA',
+                       'ORKTemperature', 'ORKWindspeed', 'CO2Intensity',
+                       'ActualWindProduction', 'SystemLoadEP2', 'SMPEP2']
+    df[cols_to_numeric] = df[cols_to_numeric].apply(pd.to_numeric, errors='coerce')
+
+    # read_csv already maps the specified missing tokens to NaN.
     print("\n3. Handling missing values...")
-    df.replace(['', 'NA', 'N/A', None], np.nan, inplace=True)
     
     # Remove rows with missing critical values
     df_cleaned = df.dropna(subset=['ORKTemperature','ORKWindspeed'])
