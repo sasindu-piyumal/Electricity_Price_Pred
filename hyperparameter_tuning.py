@@ -317,39 +317,35 @@ def create_refined_param_grid(best_params):
     
     return refined_grid
 
-def perform_grid_search(X_train, y_train, refined_grid, cv):
-    """
-    Perform fine-tuning using GridSearchCV with refined parameters.
-    """
-    print(f"\n13. Performing GridSearchCV for fine-tuning...")
+def perform_grid_search(X_train, y_train, refined_grid, cv, n_iter=24):
+    """Perform a fixed-budget local refinement around the broad-search winner."""
+    total_candidates = int(np.prod([len(values) for values in refined_grid.values()]))
+    refinement_iterations = min(n_iter, total_candidates)
+
+    print(f"\n13. Performing local randomized refinement with {refinement_iterations} candidates...")
     print("    This may take some time...")
-    
-    # Create base model (n_jobs=1 to avoid nested threading CPU thrashing)
+
+    # Search-level parallelism avoids nested worker oversubscription.
     rf_base = RandomForestRegressor(n_jobs=1)
-    
-    # Setup GridSearchCV
-    grid_search = GridSearchCV(
+    grid_search = RandomizedSearchCV(
         estimator=rf_base,
-        param_grid=refined_grid,
+        param_distributions=refined_grid,
+        n_iter=refinement_iterations,
         cv=cv,
         scoring='r2',
         n_jobs=-1,
+        random_state=RANDOM_STATE,
         verbose=1
     )
-    
-    # Track time
+
     start_time = time.time()
-    
-    # Fit the grid search
     grid_search.fit(X_train, y_train)
-    
-    end_time = time.time()
-    elapsed_time = (end_time - start_time) / 60
-    
-    print(f"\n    GridSearchCV completed in {elapsed_time:.2f} minutes")
+    elapsed_time = (time.time() - start_time) / 60
+
+    print(f"\n    Local refinement completed in {elapsed_time:.2f} minutes")
     print(f"    Best R² score: {grid_search.best_score_:.4f}")
     print(f"    Best parameters: {grid_search.best_params_}")
-    
+
     return grid_search, elapsed_time
 
 # Performance Evaluation and Analysis
