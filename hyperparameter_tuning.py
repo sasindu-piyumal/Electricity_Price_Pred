@@ -550,7 +550,7 @@ def main():
         
         # Perform GridSearchCV
         print("\n" + "="*80)
-        print("HYPERPARAMETER TUNING - PHASE 2: GRID SEARCH")
+        print("HYPERPARAMETER TUNING - PHASE 2: LOCAL REFINEMENT")
         print("="*80)
         grid_search, grid_time = perform_grid_search(
             X_train, y_train, refined_grid, cv
