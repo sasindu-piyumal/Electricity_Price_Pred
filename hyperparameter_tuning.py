@@ -583,28 +583,27 @@ def main():
         # Prepare results dictionary
         results = {
             'baseline_model': {
-                'model': baseline_rf,
                 'metrics': baseline_results,
                 'r2': baseline_r2
             },
             'random_search': {
-                'search_object': random_search,
                 'best_params': random_search.best_params_,
                 'best_score_cv': random_search.best_score_,
                 'time_minutes': random_time,
+                'candidate_count': len(random_search.cv_results_['params']),
                 'param_impacts': param_impacts_random
             },
             'grid_search': {
-                'search_object': grid_search,
                 'best_params': grid_search.best_params_,
                 'best_score_cv': grid_search.best_score_,
                 'time_minutes': grid_time,
+                'candidate_count': len(grid_search.cv_results_['params']),
                 'param_impacts': param_impacts_grid,
                 'refined_grid': refined_grid
             },
             'best_model': {
                 'model': best_model,
-                'metrics': final_results,
+                'metrics': {key: value for key, value in final_results.items() if key != 'predictions'},
                 'r2': final_r2,
                 'feature_importance': feature_importance_df
             },
