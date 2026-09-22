@@ -109,22 +109,17 @@ def add_cyclic_features(df_scaled):
     print("\n6. Adding cyclic features...")
     
     # Define periodic transform function
-    def periodic_transform(df, variable):
-        max_val = df[variable].max()
-        # Avoid 0/0 when a cyclic feature is present but all values are zero.
-        if max_val == 0:
-            df[f"{variable}_SIN"] = 0
-            df[f"{variable}_COS"] = 1
-        else:
-            df[f"{variable}_SIN"] = np.sin(df[variable] / max_val * 2 * np.pi)
-            df[f"{variable}_COS"] = np.cos(df[variable] / max_val * 2 * np.pi)
+    def periodic_transform(df, variable, period, offset=0):
+        angle = (df[variable] - offset) / period * 2 * np.pi
+        df[f"{variable}_SIN"] = np.sin(angle)
+        df[f"{variable}_COS"] = np.cos(angle)
         return df
     
     # Apply transformations
-    df_scaled = periodic_transform(df_scaled, 'DayOfWeek')
-    df_scaled = periodic_transform(df_scaled, 'Day')
-    df_scaled = periodic_transform(df_scaled, 'Month')
-    df_scaled = periodic_transform(df_scaled, 'PeriodOfDay')
+    df_scaled = periodic_transform(df_scaled, 'DayOfWeek', 7)
+    df_scaled = periodic_transform(df_scaled, 'Day', 31, 1)
+    df_scaled = periodic_transform(df_scaled, 'Month', 12, 1)
+    df_scaled = periodic_transform(df_scaled, 'PeriodOfDay', 48, 1)
     
     # Drop original cyclic columns
     df_scaled = df_scaled.drop(columns=['DayOfWeek', 'Day', 'Month', 'PeriodOfDay'])
