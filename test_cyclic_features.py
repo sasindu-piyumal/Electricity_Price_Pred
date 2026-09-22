@@ -3,6 +3,7 @@
 
 import unittest
 
+import numpy as np
 import pandas as pd
 
 from hyperparameter_tuning import add_cyclic_features
