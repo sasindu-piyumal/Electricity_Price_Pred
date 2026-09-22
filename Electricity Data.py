@@ -279,18 +279,11 @@ plt.show()
 # In[ ]:
 
 
-def periodic_transform(df, variable):
+def periodic_transform(df, variable, period, offset=0):
     """Transform cyclic features into sine and cosine components."""
-    max_val = df[variable].max()
-    
-    # Check for division by zero - if max is zero, set normalized values to 0
-    if max_val == 0:
-        df[f"{variable}_SIN"] = 0
-        df[f"{variable}_COS"] = 1
-    else:
-        angle = df[variable] / max_val * 2 * np.pi
-        df[f"{variable}_SIN"] = np.sin(angle)
-        df[f"{variable}_COS"] = np.cos(angle)
+    angle = (df[variable] - offset) / period * 2 * np.pi
+    df[f"{variable}_SIN"] = np.sin(angle)
+    df[f"{variable}_COS"] = np.cos(angle)
     
     return df
 
