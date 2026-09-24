@@ -25,7 +25,6 @@ from sklearn.model_selection import (
     GridSearchCV,
     TimeSeriesSplit
 )
-from sklearn.preprocessing import MinMaxScaler
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
@@ -58,21 +57,19 @@ def load_and_preprocess_data():
         low_memory=False,
     )
     data.index = pd.to_datetime(data.index, format="%d/%m/%Y %H:%M")
-    df = pd.DataFrame(data)
-    
+    df = data
+
     print(f"   - Dataset shape: {df.shape}")
-    
-    # Convert columns to numeric
+
+    # Convert the mixed-type numerical block in one vectorized assignment.
     print("\n2. Converting columns to numeric...")
-    cols_to_numeric = ['ForecastWindProduction', 'SystemLoadEA', 'SMPEA', 
-                      'ORKTemperature', 'ORKWindspeed', 'CO2Intensity', 
-                      'ActualWindProduction', 'SystemLoadEP2', 'SMPEP2']
-    for col in cols_to_numeric:
-        df[col] = pd.to_numeric(df[col], errors='coerce')
-    
-    # Handle missing values
+    cols_to_numeric = ['ForecastWindProduction', 'SystemLoadEA', 'SMPEA',
+                       'ORKTemperature', 'ORKWindspeed', 'CO2Intensity',
+                       'ActualWindProduction', 'SystemLoadEP2', 'SMPEP2']
+    df[cols_to_numeric] = df[cols_to_numeric].apply(pd.to_numeric, errors='coerce')
+
+    # read_csv already maps the specified missing tokens to NaN.
     print("\n3. Handling missing values...")
-    df.replace(['', 'NA', 'N/A', None], np.nan, inplace=True)
     
     # Remove rows with missing critical values
     df_cleaned = df.dropna(subset=['ORKTemperature','ORKWindspeed'])
@@ -83,16 +80,17 @@ def load_and_preprocess_data():
     SMPEP2_out = (df_cleaned['SMPEP2'] > 0) & (df_cleaned['SMPEP2'] <= 550)
     df_cleaned = df_cleaned[SMPEP2_out]
     
-    # Fill missing values with median for skewed distributions
-    fill_with_median = ['ForecastWindProduction','SystemLoadEA','SMPEA',
-                       'ActualWindProduction', 'SystemLoadEP2', 'SMPEP2']
-    for col in fill_with_median:
-        median_col = df_cleaned[col].median()
-        df_cleaned[col].fillna(median_col, inplace=True)
-    
+    # Fill the skewed numerical block from one median reduction and assignment.
+    fill_with_median = ['ForecastWindProduction', 'SystemLoadEA', 'SMPEA',
+                        'ActualWindProduction', 'SystemLoadEP2', 'SMPEP2']
+    df_cleaned[fill_with_median] = df_cleaned[fill_with_median].fillna(
+        df_cleaned[fill_with_median].median()
+    )
+
     # Fill CO2Intensity with mean (normal distribution)
-    mean_CO2Intensity = df_cleaned['CO2Intensity'].mean()
-    df_cleaned['CO2Intensity'].fillna(mean_CO2Intensity, inplace=True)
+    df_cleaned['CO2Intensity'] = df_cleaned['CO2Intensity'].fillna(
+        df_cleaned['CO2Intensity'].mean()
+    )
     
     # Drop highly correlated features
     print("\n5. Dropping highly correlated features...")
@@ -150,16 +148,13 @@ def prepare_training_data(df_new):
         X, y, test_size=0.2, random_state=RANDOM_STATE, shuffle=False
     )
     
-    # Scale features
-    print("\n8. Scaling features...")
-    scaler = MinMaxScaler()
-    X_train_scaled = scaler.fit_transform(X_train)
-    X_test_scaled = scaler.transform(X_test)
-    
-    print(f"   - Training set shape: {X_train_scaled.shape}")
-    print(f"   - Test set shape: {X_test_scaled.shape}")
-    
-    return X_train_scaled, X_test_scaled, y_train, y_test, scaler
+    # Tree-based models use order-preserving splits, so MinMax scaling would
+    # only allocate transformed copies without changing this model's behavior.
+    print("\n8. Using unscaled features for Random Forest...")
+    print(f"   - Training set shape: {X_train.shape}")
+    print(f"   - Test set shape: {X_test.shape}")
+
+    return X_train, X_test, y_train, y_test
 
 # Cross-validation and Parameter Search Space
 def setup_cross_validation(n_splits=5):
@@ -317,69 +312,62 @@ def create_refined_param_grid(best_params):
     
     return refined_grid
 
-def perform_grid_search(X_train, y_train, refined_grid, cv):
-    """
-    Perform fine-tuning using GridSearchCV with refined parameters.
-    """
-    print(f"\n13. Performing GridSearchCV for fine-tuning...")
+def perform_grid_search(X_train, y_train, refined_grid, cv, n_iter=24):
+    """Perform a fixed-budget local refinement around the broad-search winner."""
+    total_candidates = int(np.prod([len(values) for values in refined_grid.values()]))
+    refinement_iterations = min(n_iter, total_candidates)
+
+    print(f"\n13. Performing local randomized refinement with {refinement_iterations} candidates...")
     print("    This may take some time...")
-    
-    # Create base model (n_jobs=1 to avoid nested threading CPU thrashing)
+
+    # Search-level parallelism avoids nested worker oversubscription.
     rf_base = RandomForestRegressor(n_jobs=1)
-    
-    # Setup GridSearchCV
-    grid_search = GridSearchCV(
+    grid_search = RandomizedSearchCV(
         estimator=rf_base,
-        param_grid=refined_grid,
+        param_distributions=refined_grid,
+        n_iter=refinement_iterations,
         cv=cv,
         scoring='r2',
         n_jobs=-1,
+        random_state=RANDOM_STATE,
         verbose=1
     )
-    
-    # Track time
+
     start_time = time.time()
-    
-    # Fit the grid search
     grid_search.fit(X_train, y_train)
-    
-    end_time = time.time()
-    elapsed_time = (end_time - start_time) / 60
-    
-    print(f"\n    GridSearchCV completed in {elapsed_time:.2f} minutes")
+    elapsed_time = (time.time() - start_time) / 60
+
+    print(f"\n    Local refinement completed in {elapsed_time:.2f} minutes")
     print(f"    Best R² score: {grid_search.best_score_:.4f}")
     print(f"    Best parameters: {grid_search.best_params_}")
-    
+
     return grid_search, elapsed_time
 
 # Performance Evaluation and Analysis
-def evaluate_model(model, X_test, y_test, model_name="Model"):
-    """
-    Evaluate model performance with multiple metrics.
-    """
+def evaluate_model(model, X_test, y_test, model_name="Model", return_predictions=False):
+    """Evaluate a model and retain predictions only when a caller needs them."""
     print(f"\n14. Evaluating {model_name}...")
-    
-    # Make predictions
+
     y_pred = model.predict(X_test)
-    
-    # Calculate metrics
     r2 = r2_score(y_test, y_pred)
     mae = mean_absolute_error(y_test, y_pred)
     mse = mean_squared_error(y_test, y_pred)
     rmse = np.sqrt(mse)
-    
+
     print(f"    R² Score: {r2:.4f}")
     print(f"    MAE: {mae:.4f}")
     print(f"    MSE: {mse:.4f}")
     print(f"    RMSE: {rmse:.4f}")
-    
-    return {
+
+    metrics = {
         'r2': r2,
         'mae': mae,
         'mse': mse,
         'rmse': rmse,
-        'predictions': y_pred
     }
+    if return_predictions:
+        metrics['predictions'] = y_pred
+    return metrics
 
 def analyze_feature_importance(best_model, feature_names):
     """
@@ -515,7 +503,7 @@ def main():
         df = load_and_preprocess_data()
         
         # Prepare training data
-        X_train, X_test, y_train, y_test, scaler = prepare_training_data(df)
+        X_train, X_test, y_train, y_test = prepare_training_data(df)
         
         # Get feature names
         feature_names = df.drop(columns=['SMPEP2']).columns.tolist()
@@ -557,7 +545,7 @@ def main():
         
         # Perform GridSearchCV
         print("\n" + "="*80)
-        print("HYPERPARAMETER TUNING - PHASE 2: GRID SEARCH")
+        print("HYPERPARAMETER TUNING - PHASE 2: LOCAL REFINEMENT")
         print("="*80)
         grid_search, grid_time = perform_grid_search(
             X_train, y_train, refined_grid, cv
@@ -568,7 +556,9 @@ def main():
         print("FINAL MODEL EVALUATION")
         print("="*80)
         best_model = grid_search.best_estimator_
-        final_results = evaluate_model(best_model, X_test, y_test, "Optimized Random Forest")
+        final_results = evaluate_model(
+            best_model, X_test, y_test, "Optimized Random Forest", return_predictions=True
+        )
         final_r2 = final_results['r2']
         
         # Feature importance analysis
@@ -588,28 +578,27 @@ def main():
         # Prepare results dictionary
         results = {
             'baseline_model': {
-                'model': baseline_rf,
                 'metrics': baseline_results,
                 'r2': baseline_r2
             },
             'random_search': {
-                'search_object': random_search,
                 'best_params': random_search.best_params_,
                 'best_score_cv': random_search.best_score_,
                 'time_minutes': random_time,
+                'candidate_count': len(random_search.cv_results_['params']),
                 'param_impacts': param_impacts_random
             },
             'grid_search': {
-                'search_object': grid_search,
                 'best_params': grid_search.best_params_,
                 'best_score_cv': grid_search.best_score_,
                 'time_minutes': grid_time,
+                'candidate_count': len(grid_search.cv_results_['params']),
                 'param_impacts': param_impacts_grid,
                 'refined_grid': refined_grid
             },
             'best_model': {
                 'model': best_model,
-                'metrics': final_results,
+                'metrics': {key: value for key, value in final_results.items() if key != 'predictions'},
                 'r2': final_r2,
                 'feature_importance': feature_importance_df
             },
