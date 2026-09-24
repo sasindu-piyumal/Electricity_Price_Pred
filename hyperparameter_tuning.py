@@ -142,7 +142,7 @@ def prepare_training_data(df_new):
     df_scaled = df_scaled.drop(columns=['DateTime'])
     
     # Split features and target
-    X = df_scaled.drop(columns='SMPEP2', axis=1)
+    X = df_scaled.drop(columns=['SMPEP2'])
     y = df_scaled['SMPEP2']
     
     # Train-test split
