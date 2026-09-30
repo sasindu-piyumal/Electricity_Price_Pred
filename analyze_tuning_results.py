@@ -5,11 +5,13 @@
 Utility script to analyze saved hyperparameter tuning results.
 """
 
-import joblib
-import pandas as pd
-import numpy as np
+import json
+from pathlib import Path
 
-def load_and_analyze_results(filename='tuning_results.joblib'):
+import pandas as pd
+
+
+def load_and_analyze_results(filename='tuning_results.json'):
     """
     Load and display analysis of hyperparameter tuning results.
     """
@@ -18,8 +20,8 @@ def load_and_analyze_results(filename='tuning_results.joblib'):
     print("="*80)
     
     try:
-        # Load results using joblib (secure alternative to pickle)
-        results = joblib.load(filename)
+        with Path(filename).open(encoding='utf-8') as results_file:
+            results = json.load(results_file)
         
         # Cache repeated dictionary lookups
         baseline_model = results['baseline_model']
@@ -68,8 +70,8 @@ def load_and_analyze_results(filename='tuning_results.joblib'):
         
         print(f"\nTop 5 Important Features:")
         feature_importance = best_model['feature_importance']
-        for row in feature_importance.head(5).itertuples(index=False):
-            print(f"  {row.feature}: {row.importance:.4f}")
+        for row in feature_importance[:5]:
+            print(f"  {row['feature']}: {row['importance']:.4f}")
         
         print(f"\nModel Configuration:")
         print(f"  Training samples: {metadata['train_shape'][0]}")
@@ -82,6 +84,8 @@ def load_and_analyze_results(filename='tuning_results.joblib'):
         
     except FileNotFoundError:
         print(f"Error: {filename} not found. Please run hyperparameter_tuning.py first.")
+    except (json.JSONDecodeError, UnicodeDecodeError) as e:
+        print(f"Error: {filename} is not a valid result summary: {e}")
     except Exception as e:
         print(f"Error loading results: {str(e)}")
     
