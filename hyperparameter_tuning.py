@@ -83,17 +83,17 @@ def load_and_preprocess_data():
     SMPEP2_out = (df_cleaned['SMPEP2'] > 0) & (df_cleaned['SMPEP2'] <= 550)
     df_cleaned = df_cleaned[SMPEP2_out]
     
-    # Fill missing values with median for skewed distributions
-    fill_with_median = ['ForecastWindProduction','SystemLoadEA','SMPEA',
-                       'ActualWindProduction', 'SystemLoadEP2', 'SMPEP2']
-    for col in fill_with_median:
-        median_col = df_cleaned[col].median()
-        df_cleaned[col].fillna(median_col, inplace=True)
-    
-    # Fill CO2Intensity with mean (normal distribution)
-    mean_CO2Intensity = df_cleaned['CO2Intensity'].mean()
-    df_cleaned['CO2Intensity'].fillna(mean_CO2Intensity, inplace=True)
-    
+    # NOTE: Median/mean imputation for the remaining skewed/normal columns
+    # (SMPEA, ActualWindProduction, SystemLoadEP2 via median; CO2Intensity
+    # via mean) is intentionally deferred to prepare_training_data(), where
+    # it is fit on the training split only and applied to both splits. Doing
+    # it here (on the full df_cleaned, before the train/test split) would
+    # leak test-period statistics into the training-time fill values, the
+    # same leakage class the scaler already avoids by fitting train-only.
+    # (SMPEP2 itself already has no remaining NaNs by this point: the
+    # outlier filter above treats NaN comparisons as False and drops those
+    # rows, so no separate SMPEP2 fill is needed.)
+
     # Drop highly correlated features
     print("\n5. Dropping highly correlated features...")
     df_new = df_cleaned.drop(columns=['Holiday','WeekOfYear','ForecastWindProduction','SystemLoadEA'])
@@ -149,7 +149,22 @@ def prepare_training_data(df_new):
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=RANDOM_STATE, shuffle=False
     )
-    
+
+    # Impute remaining missing values using statistics fit on the training
+    # split only, then applied to both splits -- mirrors the scaler below
+    # and avoids leaking test-period medians/means into training-time fills.
+    median_fill_cols = [c for c in ['SMPEA', 'ActualWindProduction', 'SystemLoadEP2']
+                         if c in X_train.columns]
+    for col in median_fill_cols:
+        median_col = X_train[col].median()
+        X_train[col] = X_train[col].fillna(median_col)
+        X_test[col] = X_test[col].fillna(median_col)
+
+    if 'CO2Intensity' in X_train.columns:
+        mean_co2 = X_train['CO2Intensity'].mean()
+        X_train['CO2Intensity'] = X_train['CO2Intensity'].fillna(mean_co2)
+        X_test['CO2Intensity'] = X_test['CO2Intensity'].fillna(mean_co2)
+
     # Scale features
     print("\n8. Scaling features...")
     scaler = MinMaxScaler()
