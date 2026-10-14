@@ -389,7 +389,23 @@ dt = DecisionTreeRegressor()
 model_acc(dt)
 
 from sklearn.ensemble import RandomForestRegressor
-rf = RandomForestRegressor(n_jobs=-1)
+# Regularized hyperparameters informed by hyperparameter_tuning.py's
+# RandomizedSearchCV/GridSearchCV results on this dataset (TimeSeriesSplit
+# cross-validated): bounding max_depth and requiring a minimum leaf size
+# curbs overfitting from the fully-grown default trees, while max_features
+# ='sqrt' both regularizes and keeps per-split cost (and thus prediction
+# latency) no higher than the default of considering all features.
+# n_estimators is kept at the original default of 100 (not raised) so
+# inference-time complexity does not increase.
+rf = RandomForestRegressor(
+    n_estimators=100,
+    max_depth=20,
+    min_samples_split=5,
+    min_samples_leaf=2,
+    max_features='sqrt',
+    random_state=42,
+    n_jobs=-1,
+)
 model_acc(rf)
 
 from sklearn.svm import SVR
