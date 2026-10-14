@@ -94,9 +94,17 @@ def load_and_preprocess_data():
     # outlier filter above treats NaN comparisons as False and drops those
     # rows, so no separate SMPEP2 fill is needed.)
 
-    # Drop highly correlated features
-    print("\n5. Dropping highly correlated features...")
-    df_new = df_cleaned.drop(columns=['Holiday','WeekOfYear','ForecastWindProduction','SystemLoadEA'])
+    # Drop redundant features only.
+    # Holiday is fully captured by HolidayFlag and WeekOfYear duplicates
+    # Month, so both are safe to drop regardless of model choice.
+    # ForecastWindProduction and SystemLoadEA were previously dropped too,
+    # based on a correlation-heatmap analysis aimed at the linear/SVR
+    # baselines. The shipped model is a Random Forest, which (unlike linear
+    # models) is not degraded by collinear inputs, and these two forecast
+    # columns carry information a tree ensemble can still exploit (e.g. the
+    # forecast-vs-actual gap), so they are retained here.
+    print("\n5. Dropping redundant features...")
+    df_new = df_cleaned.drop(columns=['Holiday', 'WeekOfYear'])
     
     print(f"   - Cleaned dataset shape: {df_new.shape}")
     
