@@ -75,6 +75,7 @@ def load_and_preprocess_data():
     df.replace(['', 'NA', 'N/A', None], np.nan, inplace=True)
     
     # Remove rows with missing critical values
+    # Validate the schema first so pandas does not fail with an unclear dropna error.
     required_cols = ['ORKTemperature', 'ORKWindspeed']
     missing_cols = [col for col in required_cols if col not in df.columns]
     if missing_cols:
