@@ -75,10 +75,16 @@ def load_and_preprocess_data():
     df.replace(['', 'NA', 'N/A', None], np.nan, inplace=True)
     
     # Remove rows with missing critical values
-    df_cleaned = df.dropna(subset=['ORKTemperature','ORKWindspeed'])
+    required_cols = ['ORKTemperature', 'ORKWindspeed']
+    missing_cols = [col for col in required_cols if col not in df.columns]
+    if missing_cols:
+        raise KeyError(f"Missing required column(s) in input data: {missing_cols}")
+    df_cleaned = df.dropna(subset=required_cols)
     
     # Remove outliers from SMPEP2
     print("\n4. Removing outliers...")
+    if 'SMPEP2' not in df_cleaned.columns:
+        raise KeyError("Missing required column 'SMPEP2' in input data")
     # Fixed: Changed OR (|) to AND (&) to properly filter values between 0 and 550
     SMPEP2_out = (df_cleaned['SMPEP2'] > 0) & (df_cleaned['SMPEP2'] <= 550)
     df_cleaned = df_cleaned[SMPEP2_out]
