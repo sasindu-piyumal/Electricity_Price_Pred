@@ -291,6 +291,7 @@ def periodic_transform(df, variable, period, offset=0):
 # In[ ]:
 
 
+# DayOfWeek is encoded from 1 to 7, so offset 1 keeps the first weekday at angle 0.
 df_scaled = periodic_transform(df_scaled, 'DayOfWeek', 7, 1)
 df_scaled = periodic_transform(df_scaled, 'Day', 31, 1)
 df_scaled = periodic_transform(df_scaled, 'Month', 12, 1)
