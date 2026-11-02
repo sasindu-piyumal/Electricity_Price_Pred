@@ -291,7 +291,7 @@ def periodic_transform(df, variable, period, offset=0):
 # In[ ]:
 
 
-df_scaled = periodic_transform(df_scaled, 'DayOfWeek', 7)
+df_scaled = periodic_transform(df_scaled, 'DayOfWeek', 7, 0)
 df_scaled = periodic_transform(df_scaled, 'Day', 31, 1)
 df_scaled = periodic_transform(df_scaled, 'Month', 12, 1)
 df_scaled = periodic_transform(df_scaled, 'PeriodOfDay', 48, 1)
