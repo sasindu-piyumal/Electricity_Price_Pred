@@ -67,6 +67,12 @@ def load_and_preprocess_data():
     cols_to_numeric = ['ForecastWindProduction', 'SystemLoadEA', 'SMPEA', 
                       'ORKTemperature', 'ORKWindspeed', 'CO2Intensity', 
                       'ActualWindProduction', 'SystemLoadEP2', 'SMPEP2']
+    missing_columns = [col for col in cols_to_numeric if col not in df.columns]
+    if missing_columns:
+        raise ValueError(
+            "Input CSV is missing required columns: "
+            + ", ".join(missing_columns)
+        )
     for col in cols_to_numeric:
         df[col] = pd.to_numeric(df[col], errors='coerce')
     
