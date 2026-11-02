@@ -620,7 +620,7 @@ model_acc_no_scale(svm)
 
 y_test_pred = rf.predict(X_test)
 y_test_pred = y_test_pred.flatten()
-final_dfr = pd.DataFrame({'Prediction': y_test_pred, 'Real': y_test.to_numpy(copy=False)})
+final_dfr = pd.DataFrame({'Prediction': y_test_pred, 'Real': Y_test.to_numpy(copy=False)})
 
 
 # In[ ]:
