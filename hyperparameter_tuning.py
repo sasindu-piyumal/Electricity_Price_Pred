@@ -84,6 +84,7 @@ def load_and_preprocess_data():
     
     # Remove outliers from SMPEP2
     print("\n4. Removing outliers...")
+    # Fail explicitly when the target column is absent before constructing the filter.
     if 'SMPEP2' not in df_cleaned.columns:
         raise KeyError("Missing required column 'SMPEP2' in input data")
     # Fixed: Changed OR (|) to AND (&) to properly filter values between 0 and 550
